@@ -1,0 +1,488 @@
+/* ==========================================
+   ABOUT PAGE STYLES
+   ========================================== */
+
+/* Mission Section */
+.mission-section {
+    background-color: #1A0F0A;
+    padding: 5rem 2rem;
+    position: relative;
+    overflow: hidden;
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mission-container {
+    max-width: 1200px;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 3rem;
+    align-items: center;
+    position: relative;
+}
+
+/* Coffee Beans Left */
+.coffee-beans-left {
+    position: relative;
+    height: 350px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bean {
+    position: absolute;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-image: url('../Coffee/NutellaLatte.png');
+    opacity: 0.9;
+}
+
+.bean-1 {
+    width: 100px;
+    height: 120px;
+    top: 20px;
+    left: 30px;
+    transform: rotate(-25deg);
+}
+
+.bean-2 {
+    width: 110px;
+    height: 130px;
+    top: 150px;
+    left: 10px;
+    transform: rotate(15deg);
+}
+
+.bean-3 {
+    width: 95px;
+    height: 115px;
+    top: 120px;
+    right: 40px;
+    transform: rotate(-15deg);
+}
+
+.bean-4 {
+    width: 100px;
+    height: 120px;
+    bottom: 50px;
+    left: 50px;
+    transform: rotate(20deg);
+}
+
+.bean-5 {
+    width: 105px;
+    height: 125px;
+    bottom: 20px;
+    right: 20px;
+    transform: rotate(-20deg);
+}
+
+/* Mission Content */
+.mission-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    z-index: 2;
+}
+
+.mission-content .section-title {
+    color: #E8E0D0;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    letter-spacing: 2px;
+}
+
+.mission-text {
+    color: #D6D0C4;
+    font-family: var(--font-body);
+    font-size: 1.1rem;
+    line-height: 1.8;
+}
+
+.mission-text p {
+    margin: 1rem 0;
+}
+
+/* Coffee Splash Right */
+.coffee-splash-right {
+    position: relative;
+    height: 350px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.splash-cup {
+    width: 280px;
+    height: 300px;
+    background-image: url('../Coffee/splash.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: drop-shadow(15px 15px 30px rgba(0, 0, 0, 0.4));
+}
+
+/* Story Section */
+.story-section {
+    background-color: #E8E0D0;
+    padding: 5rem 2rem;
+    min-height: 600px;
+    display: flex;
+    align-items: center;
+}
+
+.story-section .section-title {
+    color: #1A0F0A;
+    font-size: 2.5rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 3rem;
+}
+
+/* Story Images */
+.story-images {
+    position: relative;
+    height: 450px;
+    margin-bottom: 2rem;
+}
+
+.story-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 20px;
+    position: absolute;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+}
+
+.story-img-1 {
+    width: 240px;
+    height: 320px;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    background-color: #D4C8B8;
+}
+
+.story-img-2 {
+    width: 260px;
+    height: 300px;
+    top: 80px;
+    right: 0;
+    z-index: 1;
+    background-color: #D4C8B8;
+}
+
+/* Story Text */
+.story-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.story-paragraph {
+    font-family: var(--font-body);
+    font-size: 1rem;
+    line-height: 1.8;
+    color: #1A0F0A;
+    margin: 0;
+}
+
+/* ==========================================
+   FOOTER STYLES
+   ========================================== */
+
+.footer {
+    background-color: #E8E0D0;
+    border-top: 1px solid var(--color-dark-bg);
+    padding: 2.3rem 0 0.9rem;
+    margin-top: 0;
+}
+
+.footer-content {
+    width: 100%;
+}
+
+.footer .container {
+    max-width: 1280px;
+}
+
+.footer-main {
+    margin-bottom: 1.9rem;
+}
+
+.footer-logo {
+    font-family: var(--font-header);
+    font-size: 1.85rem;
+    font-weight: 700;
+    color: #1A0F0A;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+.footer-title {
+    font-family: var(--font-header);
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: #1A0F0A;
+    margin-bottom: 1rem;
+    letter-spacing: 0.5px;
+    text-transform: none;
+}
+
+.footer-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-links li {
+    margin-bottom: 0.45rem;
+}
+
+.footer-links a {
+    font-family: var(--font-body);
+    font-size: 1.55rem;
+    line-height: 1.2;
+    color: #1A0F0A;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+    color: var(--color-accent);
+}
+
+/* Contact Info */
+.footer-info {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-info p {
+    font-family: var(--font-body);
+    font-size: 1.55rem;
+    line-height: 1.25;
+    color: #1A0F0A;
+    margin: 0 0 0.45rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.footer-info i {
+    width: 18px;
+    font-size: 0.85em;
+}
+
+/* Social Links */
+.footer-socials {
+    display: flex;
+    gap: 1.1rem;
+    justify-content: center;
+}
+
+.social-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    height: auto;
+    background-color: transparent;
+    color: #1A0F0A;
+    border-radius: 0;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 1.65rem;
+}
+
+.social-link:hover {
+    color: var(--color-accent);
+    transform: translateY(-3px);
+}
+
+/* Divider */
+.footer-divider {
+    border: none;
+    border-top: 1px solid #A89F92;
+    margin: 2rem 0;
+}
+
+.footer-divider-copyright {
+    border: none;
+    border-top: 1px solid #C6BDB1;
+    margin: 1.2rem 0;
+}
+
+/* Copyright */
+.footer-bottom {
+    text-align: center;
+    padding: 0.25rem 0;
+}
+
+.copyright-text {
+    font-family: var(--font-body);
+    font-size: 1.35rem;
+    color: #8F877C;
+    margin: 0;
+}
+
+/* ==========================================
+   RESPONSIVE DESIGN
+   ========================================== */
+
+@media (max-width: 1024px) {
+    .mission-container {
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+    }
+    
+    .coffee-splash-right {
+        grid-column: 1 / -1;
+        height: 200px;
+    }
+    
+    .splash-cup {
+        width: 200px;
+        height: 200px;
+    }
+}
+
+@media (max-width: 768px) {
+    .mission-section {
+        padding: 3rem 1rem;
+        min-height: auto;
+    }
+    
+    .mission-container {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .coffee-beans-left {
+        height: 250px;
+    }
+    
+    .bean-1 { width: 80px; height: 100px; }
+    .bean-2 { width: 85px; height: 105px; }
+    .bean-3 { width: 75px; height: 95px; }
+    .bean-4 { width: 80px; height: 100px; }
+    .bean-5 { width: 85px; height: 105px; }
+    
+    .mission-content .section-title {
+        font-size: 2rem;
+    }
+    
+    .mission-text {
+        font-size: 1rem;
+    }
+    
+    .coffee-splash-right {
+        height: 250px;
+    }
+    
+    .splash-cup {
+        width: 220px;
+        height: 220px;
+    }
+    
+    .story-section {
+        padding: 3rem 1rem;
+    }
+    
+    .story-section .section-title {
+        font-size: 2rem;
+    }
+    
+    .story-images {
+        height: 350px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .story-img-1 {
+        width: 180px;
+        height: 250px;
+    }
+    
+    .story-img-2 {
+        width: 200px;
+        height: 240px;
+    }
+    
+    .story-paragraph {
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .mission-section {
+        padding: 2rem 0.5rem;
+    }
+    
+    .mission-content .section-title {
+        font-size: 1.5rem;
+    }
+    
+    .mission-text {
+        font-size: 0.9rem;
+        line-height: 1.6;
+    }
+    
+    .mission-text p {
+        margin: 0.7rem 0;
+    }
+    
+    .story-section {
+        padding: 2rem 0.5rem;
+    }
+    
+    .story-section .section-title {
+        font-size: 1.5rem;
+    }
+    
+    .story-images {
+        height: 280px;
+    }
+    
+    .story-img-1 {
+        width: 140px;
+        height: 200px;
+    }
+    
+    .story-img-2 {
+        width: 160px;
+        height: 190px;
+        top: 60px;
+    }
+    
+    .story-paragraph {
+        font-size: 0.9rem;
+    }
+    
+    .footer {
+        padding: 2rem 1rem;
+    }
+    
+    .footer-main {
+        text-align: center;
+    }
+    
+    .footer-title {
+        margin-top: 1.5rem;
+        margin-bottom: 0.8rem;
+    }
+    
+    .footer-socials {
+        justify-content: center;
+    }
+}

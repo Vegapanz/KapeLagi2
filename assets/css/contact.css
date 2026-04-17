@@ -1,0 +1,317 @@
+/* ==========================================
+   CONTACT PAGE STYLES
+   ========================================== */
+
+/* Contact Page Background */
+.contact-section {
+    background-color: #8B8680;
+    background-image: 
+        linear-gradient(135deg, #8B8680 0%, #9B9690 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Coffee Bean Decorations */
+.coffee-bean {
+    position: fixed;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-image: url('../Coffee/NutellaLatte.png');
+    opacity: 0.85;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.bean-1 {
+    top: 10%;
+    left: 5%;
+    width: 120px;
+    height: 140px;
+    transform: rotate(-25deg);
+}
+
+.bean-2 {
+    top: 15%;
+    right: 2%;
+    width: 130px;
+    height: 150px;
+    transform: rotate(15deg);
+}
+
+.bean-3 {
+    top: 50%;
+    right: 3%;
+    width: 140px;
+    height: 160px;
+    transform: rotate(-10deg);
+}
+
+.bean-4 {
+    bottom: 15%;
+    right: 2%;
+    width: 150px;
+    height: 170px;
+    transform: rotate(25deg);
+}
+
+.bean-5 {
+    bottom: 10%;
+    left: 2%;
+    width: 130px;
+    height: 150px;
+    transform: rotate(-20deg);
+}
+
+.bean-6 {
+    bottom: 40%;
+    left: 1%;
+    width: 120px;
+    height: 140px;
+    transform: rotate(15deg);
+}
+
+.bean-7 {
+    top: 70%;
+    left: 3%;
+    width: 125px;
+    height: 145px;
+    transform: rotate(-15deg);
+}
+
+/* Contact Container */
+.contact-container {
+    width: 100%;
+    max-width: 1000px;
+    z-index: 10;
+}
+
+/* Contact Card */
+.contact-card {
+    background-color: #3D2817;
+    border-radius: 40px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    overflow: hidden;
+    min-height: 500px;
+}
+
+/* Form Wrapper */
+.contact-form-wrapper {
+    padding: 4rem 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.contact-title {
+    font-family: var(--font-header);
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #E8E0D0;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+/* Form Styles */
+.contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.contact-label {
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 500;
+    color: #E8E0D0;
+}
+
+.contact-input,
+.contact-textarea {
+    padding: 0.9rem 1.2rem;
+    border: none;
+    border-radius: 12px;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    background-color: #F5F1E8;
+    color: #3D2817;
+    transition: all 0.3s ease;
+    resize: none;
+}
+
+.contact-input::placeholder,
+.contact-textarea::placeholder {
+    color: #A17C5C;
+}
+
+.contact-input:focus,
+.contact-textarea:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(161, 124, 92, 0.2);
+    transform: translateY(-2px);
+}
+
+/* Submit Button */
+.contact-btn {
+    padding: 0.9rem 1.5rem;
+    border: none;
+    border-radius: 12px;
+    background-color: #E8E0D0;
+    color: #3D2817;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    align-self: flex-start;
+    margin-top: 0.5rem;
+}
+
+.contact-btn:hover {
+    background-color: #F5F1E8;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Contact Info Wrapper */
+.contact-info-wrapper {
+    padding: 4rem 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2rem;
+    background: linear-gradient(135deg, #4d3a2d 0%, #3D2817 100%);
+}
+
+/* Contact Info Items */
+.contact-info-item {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+}
+
+.contact-icon {
+    font-size: 1.8rem;
+    color: #E8E0D0;
+    width: 40px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.contact-info-item:hover .contact-icon {
+    color: var(--color-accent);
+    transform: scale(1.2);
+}
+
+.contact-info-text {
+    font-family: var(--font-body);
+    font-size: 1.1rem;
+    color: #E8E0D0;
+    transition: color 0.3s ease;
+}
+
+.contact-info-item:hover .contact-info-text {
+    color: var(--color-accent);
+}
+
+/* ==========================================
+   RESPONSIVE DESIGN
+   ========================================== */
+
+@media (max-width: 768px) {
+    .contact-card {
+        grid-template-columns: 1fr;
+        min-height: auto;
+    }
+    
+    .contact-form-wrapper {
+        padding: 2.5rem 1.5rem;
+    }
+    
+    .contact-info-wrapper {
+        padding: 2.5rem 1.5rem;
+        border-top: 2px solid #5d4a3d;
+    }
+    
+    .contact-title {
+        font-size: 2rem;
+    }
+    
+    .bean-1 { width: 100px; height: 120px; }
+    .bean-2 { width: 110px; height: 130px; }
+    .bean-3 { width: 110px; height: 130px; }
+    .bean-4 { width: 120px; height: 140px; }
+    .bean-5 { width: 100px; height: 120px; }
+    .bean-6 { width: 95px; height: 115px; }
+    .bean-7 { width: 100px; height: 120px; }
+}
+
+@media (max-width: 576px) {
+    .contact-section {
+        padding: 1.5rem 0.5rem;
+    }
+    
+    .contact-card {
+        border-radius: 20px;
+    }
+    
+    .contact-form-wrapper,
+    .contact-info-wrapper {
+        padding: 1.5rem 1rem;
+    }
+    
+    .contact-title {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .contact-label {
+        font-size: 0.9rem;
+    }
+    
+    .contact-input,
+    .contact-textarea {
+        padding: 0.7rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .contact-btn {
+        padding: 0.7rem 1rem;
+        font-size: 0.85rem;
+    }
+    
+    .contact-info-item {
+        gap: 1rem;
+    }
+    
+    .contact-icon {
+        font-size: 1.5rem;
+        width: 35px;
+    }
+    
+    .contact-info-text {
+        font-size: 0.95rem;
+    }
+    
+    .bean-1 { width: 80px; height: 100px; }
+    .bean-2 { width: 85px; height: 105px; }
+    .bean-3 { width: 85px; height: 105px; }
+    .bean-4 { width: 90px; height: 110px; }
+    .bean-5 { width: 80px; height: 100px; }
+    .bean-6 { width: 75px; height: 95px; }
+    .bean-7 { width: 80px; height: 100px; }
+}

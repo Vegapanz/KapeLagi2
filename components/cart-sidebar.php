@@ -1,0 +1,147 @@
+<!-- Cart Sidebar -->
+<div class="cart-sidebar" id="cartSidebar">
+    <div class="cart-header">
+        <h3 class="cart-title">YOUR ORDERS</h3>
+        <button class="cart-close" id="cartClose">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    
+    <div class="cart-items-container" id="cartItemsContainer">
+        <!-- Cart items will be loaded here -->
+        <div class="empty-cart">
+            <i class="fas fa-shopping-cart"></i>
+            <p>Your cart is empty</p>
+        </div>
+    </div>
+    
+    <div class="cart-summary">
+        <div class="summary-row">
+            <span>Subtotal</span>
+            <span id="subtotal">0.00₱</span>
+        </div>
+        <div class="summary-row">
+            <span>Shipping</span>
+            <span id="shipping">0.00₱</span>
+        </div>
+        <div class="summary-row total">
+            <span>Total</span>
+            <span id="total">0.00₱</span>
+        </div>
+    </div>
+    
+    <button class="checkout-btn" id="checkoutBtn" onclick="window.location.href='checkout.php'">Check Out</button>
+</div>
+
+<!-- Cart Overlay -->
+<div class="cart-overlay" id="cartOverlay"></div>
+
+<script>
+    // Load cart items on page load
+    function loadCartItems() {
+        fetch('api/cart.php?action=get_cart')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.cart) {
+                    displayCart(data.cart, data.totals);
+                } else {
+                    showEmptyCart();
+                }
+            })
+            .catch(error => console.error('Error loading cart:', error));
+    }
+
+    function displayCart(cartItems, totals) {
+        const container = document.getElementById('cartItemsContainer');
+        
+        if (cartItems.length === 0) {
+            showEmptyCart();
+            return;
+        }
+        
+        let html = '';
+        cartItems.forEach(item => {
+            html += `
+                <div class="cart-item">
+                    <img src="${item.image_url || 'assets/images/placeholder.jpg'}" alt="${item.name}" class="cart-item-image">
+                    <div class="cart-item-details">
+                        <h4 class="cart-item-name">${item.name}</h4>
+                        <p class="cart-item-category">${item.category}</p>
+                        <p class="cart-item-size">size: ${item.size}</p>
+                        <p class="cart-item-qty">Qty: ${item.quantity}</p>
+                        ${item.special_instructions ? `<p class="cart-item-instructions">Special Instructions: ${item.special_instructions}</p>` : ''}
+                    </div>
+                    <div class="cart-item-price">${parseFloat(item.total_price).toFixed(2)}₱</div>
+                    <button class="cart-item-remove" onclick="removeFromCart(${item.id})" title="Remove">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+        
+        // Update totals
+        document.getElementById('subtotal').textContent = parseFloat(totals.subtotal).toFixed(2) + '₱';
+        document.getElementById('shipping').textContent = parseFloat(totals.shipping).toFixed(2) + '₱';
+        document.getElementById('total').textContent = parseFloat(totals.total).toFixed(2) + '₱';
+    }
+
+    function showEmptyCart() {
+        const container = document.getElementById('cartItemsContainer');
+        container.innerHTML = `
+            <div class="empty-cart">
+                <i class="fas fa-shopping-cart"></i>
+                <p>Your cart is empty</p>
+            </div>
+        `;
+        document.getElementById('subtotal').textContent = '0.00₱';
+        document.getElementById('shipping').textContent = '0.00₱';
+        document.getElementById('total').textContent = '0.00₱';
+    }
+
+    function removeFromCart(cartId) {
+        if (confirm('Remove this item from cart?')) {
+            fetch('api/cart.php?action=remove_from_cart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'cart_id=' + cartId
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadCartItems();
+                }
+            });
+        }
+    }
+
+    // Open/close cart sidebar
+    function openCart() {
+        document.getElementById('cartSidebar').classList.add('open');
+        document.getElementById('cartOverlay').classList.add('open');
+        loadCartItems();
+    }
+
+    function closeCart() {
+        document.getElementById('cartSidebar').classList.remove('open');
+        document.getElementById('cartOverlay').classList.remove('open');
+    }
+
+    // Event listeners
+    document.getElementById('cartClose').addEventListener('click', closeCart);
+    document.getElementById('cartOverlay').addEventListener('click', closeCart);
+
+    // Open cart when cart icon is clicked
+    document.addEventListener('DOMContentLoaded', function() {
+        const cartIcon = document.querySelector('.cart-icon');
+        if (cartIcon) {
+            cartIcon.addEventListener('click', function(e) {
+                e.preventDefault();
+                openCart();
+            });
+        }
+    });
+</script>
