@@ -4,17 +4,30 @@ document.addEventListener('DOMContentLoaded', function() {
     const filterBtns = document.querySelectorAll('.filter-btn');
     const productCards = document.querySelectorAll('.product-card');
     const searchInput = document.getElementById('searchInput');
+    const menuSubtitle = document.querySelector('.menu-subtitle');
     const productModal = new bootstrap.Modal(document.getElementById('productModal'));
-    const productBtns = document.querySelectorAll('.product-btn');
+    const quantityInput = document.getElementById('quantityInput');
+    const minusBtn = document.querySelector('.qty-btn.minus');
+    const plusBtn = document.querySelector('.qty-btn.plus');
+    const sizeButtons = document.querySelectorAll('.size-btn');
+    const modalProductName = document.getElementById('modalProductName');
+    const modalProductDesc = document.getElementById('modalProductDesc');
+    const totalPriceEl = document.getElementById('totalPrice');
+    const specialInstructionsInput = document.getElementById('specialInstructions');
     
-    let currentFilter = 'all';
+    let currentFilter = 'Coffee';
     
     // Filter functionality
     filterBtns.forEach(btn => {
         btn.addEventListener('click', function() {
             filterBtns.forEach(b => b.classList.remove('active'));
             this.classList.add('active');
-            currentFilter = this.dataset.filter === 'all' ? 'all' : this.dataset.filter;
+            currentFilter = this.dataset.filter;
+
+            if (menuSubtitle) {
+                menuSubtitle.textContent = this.textContent.trim();
+            }
+
             filterProducts();
         });
     });
@@ -31,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const category = card.dataset.category;
             const productName = card.dataset.name;
             
-            const matchesFilter = currentFilter === 'all' || category === currentFilter;
+            const matchesFilter = category === currentFilter;
             const matchesSearch = productName.includes(searchTerm);
             
             if (matchesFilter && matchesSearch) {
@@ -43,43 +56,73 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Product modal functionality
-    productBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const productId = this.dataset.productId;
-            const productName = this.dataset.productName;
-            const productDesc = this.dataset.productDesc;
-            const price16 = this.dataset.price16;
-            const price22 = this.dataset.price22;
-            
-            // Set modal data
-            document.getElementById('modalProductName').textContent = productName;
-            document.getElementById('modalProductDesc').textContent = productDesc;
-            
-            // Store prices in size buttons
-            const sizeButtons = document.querySelectorAll('.size-btn');
-            sizeButtons[0].dataset.price = price16;
-            sizeButtons[1].dataset.price = price22;
-            
-            // Reset size selection
-            sizeButtons[0].classList.add('active');
-            sizeButtons.forEach(btn => btn.classList.remove('active'));
-            sizeButtons[0].classList.add('active');
-            
-            // Store product ID
-            document.getElementById('modalProductName').dataset.productId = productId;
-            
-            // Reset quantity
-            document.getElementById('quantityInput').value = 1;
-            
-            // Update price display
-            updatePriceDisplay();
-            
-            productModal.show();
+    productCards.forEach(card => {
+        card.addEventListener('click', function() {
+            openProductModal(card);
+        });
+
+        card.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openProductModal(card);
+            }
         });
     });
+
+    function openProductModal(card) {
+        const productId = card.dataset.productId;
+        const productName = card.dataset.productName;
+        const productDesc = card.dataset.productDesc;
+        const price16 = parsePriceValue(
+            card.getAttribute('data-price-16oz') ||
+            card.getAttribute('data-price-16') ||
+            card.dataset.price16oz ||
+            card.dataset.price16
+        );
+        const price22 = parsePriceValue(
+            card.getAttribute('data-price-22oz') ||
+            card.getAttribute('data-price-22') ||
+            card.dataset.price22oz ||
+            card.dataset.price22
+        );
+
+        modalProductName.textContent = productName;
+        modalProductDesc.textContent = productDesc;
+
+        // Keep product prices in modal state to guarantee recalculation works.
+        modalProductName.dataset.price16 = String(price16);
+        modalProductName.dataset.price22 = String(price22);
+
+        sizeButtons[0].dataset.price = String(price16);
+        sizeButtons[1].dataset.price = String(price22);
+
+        sizeButtons.forEach(sizeBtn => sizeBtn.classList.remove('active'));
+        sizeButtons[0].classList.add('active');
+
+        modalProductName.dataset.productId = productId;
+
+        quantityInput.value = 1;
+        specialInstructionsInput.value = '';
+
+        updatePriceDisplay();
+        productModal.show();
+    }
+
+    function parsePriceValue(value) {
+        if (value === null || value === undefined) {
+            return 0;
+        }
+
+        // Accept values like "120", "120.00", "120,00", or "120.00P".
+        const cleaned = String(value)
+            .replace(/[^\d.,-]/g, '')
+            .replace(',', '.');
+
+        const parsed = parseFloat(cleaned);
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
     
     // Size selection
-    const sizeButtons = document.querySelectorAll('.size-btn');
     sizeButtons.forEach(btn => {
         btn.addEventListener('click', function() {
             sizeButtons.forEach(b => b.classList.remove('active'));
@@ -89,10 +132,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Quantity control
-    const quantityInput = document.getElementById('quantityInput');
-    const minusBtn = document.querySelector('.qty-btn.minus');
-    const plusBtn = document.querySelector('.qty-btn.plus');
-    
     minusBtn.addEventListener('click', function() {
         const value = parseInt(quantityInput.value) || 1;
         if (value > 1) {
@@ -108,14 +147,25 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     quantityInput.addEventListener('change', updatePriceDisplay);
+    quantityInput.addEventListener('input', updatePriceDisplay);
     
     function updatePriceDisplay() {
         const activeSize = document.querySelector('.size-btn.active');
-        const price = parseFloat(activeSize.dataset.price) || 0;
-        const quantity = parseInt(document.getElementById('quantityInput').value) || 1;
+        if (!activeSize) {
+            totalPriceEl.textContent = '0.00P';
+            return;
+        }
+
+        const fallbackPrice = activeSize.dataset.size === '22oz'
+            ? modalProductName.dataset.price22
+            : modalProductName.dataset.price16;
+
+        const price = parsePriceValue(activeSize.dataset.price || fallbackPrice);
+        const quantity = Math.max(1, parseInt(quantityInput.value, 10) || 1);
+        quantityInput.value = quantity;
         const total = price * quantity;
         
-        document.getElementById('totalPrice').textContent = total.toFixed(2) + '₽';
+        totalPriceEl.textContent = total.toFixed(2) + 'P';
     }
     
     // Add to cart
@@ -161,12 +211,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (data.success) {
                         productModal.hide();
                         if (checkout) {
+                            window.KapeNotify.toastSuccess('Proceeding to checkout...', 'Success');
                             window.location.href = 'checkout.php';
                         } else {
-                            alert('Added to cart!');
+                            window.KapeNotify.toastSuccess('Item added to cart.');
                         }
+                    } else {
+                        window.KapeNotify.popup('Cart Error', data.message || 'Unable to add item to cart.', 'error');
                     }
+                })
+                .catch(() => {
+                    window.KapeNotify.popup('Connection Error', 'Unable to connect to cart service. Please try again.', 'error');
                 });
+            })
+            .catch(() => {
+                window.KapeNotify.popup('Session Error', 'Unable to verify session. Please try again.', 'warning');
             });
     }
+
+    filterProducts();
 });

@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json');
-include 'config/db.php';
-include 'config/session.php';
+include '../config/db.php';
+include '../config/session.php';
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
@@ -18,11 +18,24 @@ if ($action == 'add_to_cart') {
     $size = isset($_POST['size']) ? $_POST['size'] : '16oz';
     $quantity = isset($_POST['quantity']) ? (int)$_POST['quantity'] : 1;
     $special_instructions = isset($_POST['special_instructions']) ? trim($_POST['special_instructions']) : '';
+
+    if (!in_array($size, ['16oz', '22oz'], true)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid size selected']);
+        exit;
+    }
+
+    if ($quantity < 1) {
+        $quantity = 1;
+    }
     
     if ($product_id > 0) {
         // Check if item already in cart
         $check_sql = "SELECT id FROM cart WHERE user_id = ? AND product_id = ? AND size = ?";
         $check_stmt = $conn->prepare($check_sql);
+        if (!$check_stmt) {
+            echo json_encode(['success' => false, 'message' => 'Failed to prepare cart lookup']);
+            exit;
+        }
         $check_stmt->bind_param("iis", $user_id, $product_id, $size);
         $check_stmt->execute();
         $check_result = $check_stmt->get_result();
@@ -31,17 +44,35 @@ if ($action == 'add_to_cart') {
             // Update quantity
             $update_sql = "UPDATE cart SET quantity = quantity + ? WHERE user_id = ? AND product_id = ? AND size = ?";
             $update_stmt = $conn->prepare($update_sql);
-            $update_stmt->bind_param("iis", $quantity, $user_id, $product_id, $size);
-            $update_stmt->execute();
+            if (!$update_stmt) {
+                echo json_encode(['success' => false, 'message' => 'Failed to prepare cart update']);
+                exit;
+            }
+            $update_stmt->bind_param("iiis", $quantity, $user_id, $product_id, $size);
+
+            if (!$update_stmt->execute()) {
+                echo json_encode(['success' => false, 'message' => 'Failed to update cart quantity']);
+                exit;
+            }
         } else {
             // Add new item
             $insert_sql = "INSERT INTO cart (user_id, product_id, size, quantity, special_instructions) VALUES (?, ?, ?, ?, ?)";
             $insert_stmt = $conn->prepare($insert_sql);
-            $insert_stmt->bind_param("iisss", $user_id, $product_id, $size, $quantity, $special_instructions);
-            $insert_stmt->execute();
+            if (!$insert_stmt) {
+                echo json_encode(['success' => false, 'message' => 'Failed to prepare cart insert']);
+                exit;
+            }
+            $insert_stmt->bind_param("iisis", $user_id, $product_id, $size, $quantity, $special_instructions);
+
+            if (!$insert_stmt->execute()) {
+                echo json_encode(['success' => false, 'message' => 'Failed to add item to cart']);
+                exit;
+            }
         }
         
         echo json_encode(['success' => true, 'message' => 'Added to cart']);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Invalid product']);
     }
 }
 
@@ -65,7 +96,10 @@ elseif ($action == 'get_cart') {
     $subtotal = 0;
     
     while ($row = $result->fetch_assoc()) {
-        $price = $row['size'] == '22oz' ? $row['price_22oz'] : $row['price_16oz'];
+        $price16 = (float)$row['price_16oz'];
+        $price22 = (float)$row['price_22oz'];
+        $effectivePrice22 = $price22 > $price16 ? $price22 : ($price16 + 20);
+        $price = $row['size'] == '22oz' ? $effectivePrice22 : $price16;
         $item_total = $price * $row['quantity'];
         $subtotal += $item_total;
         
@@ -144,7 +178,10 @@ elseif ($action == 'create_order') {
     $total_amount = 0;
     $cart_items = [];
     while ($item = $cart_result->fetch_assoc()) {
-        $price = $item['size'] == '22oz' ? $item['price_22oz'] : $item['price_16oz'];
+        $price16 = (float)$item['price_16oz'];
+        $price22 = (float)$item['price_22oz'];
+        $effectivePrice22 = $price22 > $price16 ? $price22 : ($price16 + 20);
+        $price = $item['size'] == '22oz' ? $effectivePrice22 : $price16;
         $total_amount += $price * $item['quantity'];
         $cart_items[] = $item;
     }
@@ -163,7 +200,10 @@ elseif ($action == 'create_order') {
         $item_stmt = $conn->prepare($item_sql);
         
         foreach ($cart_items as $item) {
-            $price = $item['size'] == '22oz' ? $item['price_22oz'] : $item['price_16oz'];
+            $price16 = (float)$item['price_16oz'];
+            $price22 = (float)$item['price_22oz'];
+            $effectivePrice22 = $price22 > $price16 ? $price22 : ($price16 + 20);
+            $price = $item['size'] == '22oz' ? $effectivePrice22 : $price16;
             $item_stmt->bind_param("iissdi", $order_id, $item['product_id'], $item['name'], $item['size'], $price, $item['quantity']);
             $item_stmt->execute();
         }

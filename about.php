@@ -24,6 +24,7 @@
     
     <!-- Mission Section -->
     <section class="mission-section" id="mission">
+    
         <div class="mission-container">
             <!-- Left Coffee Beans -->
             <div class="coffee-beans-left">
@@ -59,8 +60,8 @@
                 <!-- Images -->
                 <div class="col-lg-5 mb-4 mb-lg-0">
                     <div class="story-images">
-                        <img src="assets/images/story-board.jpg" alt="KapeLagi Board" class="story-img story-img-1">
-                        <img src="assets/images/story-shop.jpg" alt="KapeLagi Shop" class="story-img story-img-2">
+                        <img src="assets/images/Kapelagipics.jpg" alt="KapeLagi Board" class="story-img story-img-1">
+                        <img src="assets/images/sk.jpg" alt="KapeLagi Shop" class="story-img story-img-2">
                     </div>
                 </div>
                 

@@ -7,6 +7,16 @@ $sql = "SELECT * FROM products ORDER BY category, name";
 $result = $conn->query($sql);
 $products = [];
 while ($row = $result->fetch_assoc()) {
+    $price16 = (float)$row['price_16oz'];
+    $price22 = (float)$row['price_22oz'];
+
+    // Ensure 22oz pricing is always larger than 16oz for menu display.
+    if ($price22 <= $price16) {
+        $price22 = $price16 + 20;
+    }
+
+    $row['price_16oz_effective'] = number_format($price16, 2, '.', '');
+    $row['price_22oz_effective'] = number_format($price22, 2, '.', '');
     $products[] = $row;
 }
 
@@ -39,41 +49,53 @@ $categories = ['Coffee', 'Non-Coffee', 'Fruity'];
     
     <!-- Menu Section -->
     <section class="menu-section">
-        <div class="container-lg">
+        <div class="container-xl">
             <h1 class="menu-title">MENU</h1>
             <p class="menu-subtitle">Coffee</p>
-            
-            <!-- Filters -->
-            <div class="menu-filters">
-                <button class="filter-btn active" data-filter="all">Coffee</button>
-                <button class="filter-btn" data-filter="Non-Coffee">Non-Coffee</button>
-                <button class="filter-btn" data-filter="Fruity">Fruity</button>
+
+            <div class="menu-toolbar">
+                <!-- Filters -->
+                <div class="menu-filters">
+                    <button class="filter-btn active" data-filter="Coffee">Coffee</button>
+                    <button class="filter-btn" data-filter="Non-Coffee">Non-Coffee</button>
+                    <button class="filter-btn" data-filter="Fruity">Fruity</button>
+                </div>
+
+                <!-- Search Bar -->
+                <div class="search-wrapper">
+                    <i class="fas fa-search" aria-hidden="true"></i>
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search" aria-label="Search menu items">
+                </div>
             </div>
-            
-            <!-- Search Bar -->
-            <div class="search-wrapper">
-                <input type="text" id="searchInput" class="search-input" placeholder="Search">
-            </div>
-            
+
             <!-- Products Grid -->
-            <div class="products-grid">
+            <div class="products-shell">
+                <div class="products-grid">
                 <?php foreach ($products as $product): ?>
-                    <div class="product-card" data-category="<?php echo $product['category']; ?>" data-name="<?php echo strtolower($product['name']); ?>">
+                    <div class="product-card"
+                         data-category="<?php echo htmlspecialchars($product['category']); ?>"
+                         data-name="<?php echo htmlspecialchars(strtolower($product['name'])); ?>"
+                         data-product-id="<?php echo (int)$product['id']; ?>"
+                         data-product-name="<?php echo htmlspecialchars($product['name']); ?>"
+                         data-product-desc="<?php echo htmlspecialchars($product['description']); ?>"
+                         data-price-16oz="<?php echo htmlspecialchars($product['price_16oz_effective']); ?>"
+                         data-price-22oz="<?php echo htmlspecialchars($product['price_22oz_effective']); ?>"
+                         role="button"
+                         tabindex="0"
+                         aria-label="View <?php echo htmlspecialchars($product['name']); ?> details">
                         <div class="product-image">
                             <img src="Coffee/SpanishLatte.png" alt="<?php echo $product['name']; ?>">
                         </div>
                         <div class="product-info">
                             <h3 class="product-name"><?php echo $product['name']; ?></h3>
                             <p class="product-sizes">
-                                16oz: <?php echo $product['price_16oz']; ?>₽ | 
-                                22oz: <?php echo $product['price_22oz']; ?>₽
+                                <span>16oz: <?php echo $product['price_16oz_effective']; ?>P</span>
+                                <span>22oz: <?php echo $product['price_22oz_effective']; ?>P</span>
                             </p>
-                            <button class="product-btn" data-product-id="<?php echo $product['id']; ?>" data-product-name="<?php echo $product['name']; ?>" data-product-desc="<?php echo $product['description']; ?>" data-price-16="<?php echo $product['price_16oz']; ?>" data-price-22="<?php echo $product['price_22oz']; ?>">
-                                View
-                            </button>
                         </div>
                     </div>
                 <?php endforeach; ?>
+                </div>
             </div>
         </div>
     </section>
@@ -82,7 +104,7 @@ $categories = ['Coffee', 'Non-Coffee', 'Fruity'];
     <div class="modal fade" id="productModal" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content product-modal">
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close product-modal-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 <div class="modal-body">
                     <div class="product-detail">
                         <div class="product-detail-image">
@@ -104,24 +126,24 @@ $categories = ['Coffee', 'Non-Coffee', 'Fruity'];
                                 <label>Quantity:</label>
                                 <div class="quantity-control">
                                     <button class="qty-btn minus">−</button>
-                                    <input type="number" id="quantityInput" value="1" min="1">
+                                    <input type="number" id="quantityInput" value="1" min="1" aria-label="Quantity">
                                     <button class="qty-btn plus">+</button>
                                 </div>
+                            </div>
+
+                            <div class="price-display">
+                                <span>Price:</span>
+                                <span id="totalPrice" class="price-value">0.00P</span>
                             </div>
                             
                             <div class="special-instructions">
                                 <label>Special Instructions:</label>
-                                <textarea id="specialInstructions" placeholder="e.g., Extra shot, no ice, etc." rows="3"></textarea>
-                            </div>
-                            
-                            <div class="price-display">
-                                <span>Price: </span>
-                                <span id="totalPrice" class="price-value">0.00₽</span>
+                                <textarea id="specialInstructions" rows="3"></textarea>
                             </div>
                             
                             <div class="modal-buttons">
-                                <button class="btn-primary" id="buyNowBtn">Buy Now</button>
-                                <button class="btn-secondary" id="addToCartBtn">
+                                <button class="menu-btn menu-btn-primary" id="buyNowBtn">Buy Now</button>
+                                <button class="menu-btn menu-btn-secondary" id="addToCartBtn">
                                     <i class="fas fa-shopping-cart"></i> Add to Cart
                                 </button>
                             </div>

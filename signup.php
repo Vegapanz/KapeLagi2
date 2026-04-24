@@ -216,13 +216,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             
             if (!allRequirementsMet) {
                 e.preventDefault();
-                alert('Password does not meet all requirements');
+                window.KapeNotify.popup('Password Requirements', 'Password does not meet all requirements.', 'warning');
                 return false;
             }
             
             if (password !== confirmPassword) {
                 e.preventDefault();
-                alert('Passwords do not match');
+                window.KapeNotify.popup('Password Mismatch', 'Passwords do not match.', 'warning');
                 return false;
             }
         });

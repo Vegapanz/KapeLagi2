@@ -101,7 +101,7 @@
     }
 
     function removeFromCart(cartId) {
-        if (confirm('Remove this item from cart?')) {
+        const onConfirm = () => {
             fetch('api/cart.php?action=remove_from_cart', {
                 method: 'POST',
                 headers: {
@@ -113,9 +113,24 @@
             .then(data => {
                 if (data.success) {
                     loadCartItems();
+                    if (window.KapeNotify) {
+                        window.KapeNotify.toastInfo('Item removed from cart.', 'Updated');
+                    }
                 }
             });
-        }
+        };
+
+        window.KapeNotify.confirm({
+            title: 'Remove Item',
+            text: 'Remove this item from cart?',
+            icon: 'warning',
+            confirmText: 'Remove',
+            cancelText: 'Keep'
+        }).then(function(confirmed) {
+            if (confirmed) {
+                onConfirm();
+            }
+        });
     }
 
     // Open/close cart sidebar

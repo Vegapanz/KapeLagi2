@@ -113,32 +113,34 @@ $user = $user_result->fetch_assoc();
                 </div>
                 
                 <!-- Right: Order Summary -->
-                <div class="order-summary">
-                    <h2 class="summary-title">Order Summary</h2>
-                    
-                    <div id="cartItems" class="cart-items">
-                        <!-- Items will be loaded by JavaScript -->
+                <div class="order-summary-column">
+                    <h2 class="checkout-title">Order Summary</h2>
+
+                    <div class="order-summary">
+                        <div id="cartItems" class="cart-items">
+                            <!-- Items will be loaded by JavaScript -->
+                        </div>
+
+                        <div class="summary-divider"></div>
+
+                        <div class="summary-row">
+                            <span>Subtotal</span>
+                            <span id="subtotal">0.00P</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Shipping</span>
+                            <span id="shipping">0.00P</span>
+                        </div>
+
+                        <div class="summary-divider"></div>
+
+                        <div class="summary-row total">
+                            <span>Total</span>
+                            <span id="total">0.00P</span>
+                        </div>
+
+                        <button class="checkout-btn" id="checkoutBtn">Check Out</button>
                     </div>
-                    
-                    <div class="summary-divider"></div>
-                    
-                    <div class="summary-row">
-                        <span>Subtotal</span>
-                        <span id="subtotal">0.00₽</span>
-                    </div>
-                    <div class="summary-row">
-                        <span>Shipping</span>
-                        <span id="shipping">0.00₽</span>
-                    </div>
-                    
-                    <div class="summary-divider"></div>
-                    
-                    <div class="summary-row total">
-                        <span>Total</span>
-                        <span id="total">0.00₽</span>
-                    </div>
-                    
-                    <button class="checkout-btn" id="checkoutBtn">Check Out</button>
                 </div>
             </div>
         </div>

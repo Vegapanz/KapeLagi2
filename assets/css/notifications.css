@@ -1,0 +1,101 @@
+/* KapeLagi notification theme */
+:root {
+    --kape-dark: #180a05;
+    --kape-brown: #4a3022;
+    --kape-olive: #c7c39f;
+    --kape-cream: #d8d4b7;
+    --kape-border: #6b5a4a;
+}
+
+.kape-toast-container {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1090;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    width: min(360px, calc(100vw - 2rem));
+}
+
+.kape-toast {
+    border: 1px solid var(--kape-border);
+    border-radius: 12px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.34);
+    overflow: hidden;
+}
+
+.kape-toast .toast-header {
+    background: var(--kape-dark);
+    color: var(--kape-cream);
+    border-bottom: 1px solid var(--kape-border);
+    font-family: var(--font-header);
+    letter-spacing: 0.4px;
+}
+
+.kape-toast .toast-header .btn-close {
+    filter: invert(1) grayscale(1);
+    opacity: 0.8;
+}
+
+.kape-toast .toast-body {
+    background: var(--kape-cream);
+    color: var(--kape-dark);
+    font-family: var(--font-body);
+    font-size: 1.15rem;
+    line-height: 1.25;
+}
+
+.kape-toast-success {
+    border-left: 5px solid #2f8f59;
+}
+
+.kape-toast-error {
+    border-left: 5px solid #9d3d35;
+}
+
+.kape-toast-info {
+    border-left: 5px solid #5f4a9d;
+}
+
+.kape-swal-popup {
+    border-radius: 16px;
+    border: 1px solid var(--kape-border);
+    background: var(--kape-cream);
+    color: var(--kape-dark);
+    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.35);
+    padding-top: 0.9rem;
+}
+
+.kape-swal-title {
+    color: var(--kape-dark);
+    font-family: var(--font-header);
+    font-size: 2rem;
+    letter-spacing: 0.2px;
+}
+
+.kape-swal-html {
+    color: #34241a;
+    font-family: var(--font-body);
+    font-size: 1.28rem;
+    line-height: 1.2;
+}
+
+.kape-swal-confirm,
+.kape-swal-cancel {
+    border-radius: 8px;
+    border: 1px solid var(--kape-dark);
+    font-family: var(--font-header);
+    letter-spacing: 0.2px;
+    padding: 0.55rem 1.15rem;
+}
+
+.kape-swal-confirm {
+    background: var(--kape-dark) !important;
+    color: var(--kape-cream) !important;
+}
+
+.kape-swal-cancel {
+    background: transparent !important;
+    color: var(--kape-dark) !important;
+}
