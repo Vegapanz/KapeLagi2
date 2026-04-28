@@ -1,10 +1,10 @@
-/* ==========================================
+    /* ==========================================
    ABOUT PAGE STYLES
    ========================================== */
 
 /* Mission Section */
 .mission-section {
-    background-color: #1A0F0A;
+    background: #1A0F0A url('../Images/Desktop - 14.png') center center / cover no-repeat;
     padding: 5rem 2rem;
     position: relative;
     overflow: hidden;
@@ -31,6 +31,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    visibility: hidden;
 }
 
 .bean {
@@ -102,7 +103,7 @@
 .mission-text {
     color: #D6D0C4;
     font-family: var(--font-body);
-    font-size: 1.1rem;
+    font-size: 1.4rem;
     line-height: 1.8;
 }
 
@@ -117,6 +118,7 @@
     display: flex;
     align-items: flex-end;
     justify-content: center;
+    visibility: hidden;
 }
 
 .splash-cup {
@@ -189,7 +191,7 @@
 
 .story-paragraph {
     font-family: var(--font-body);
-    font-size: 1rem;
+    font-size: 1.4rem;
     line-height: 1.8;
     color: #1A0F0A;
     margin: 0;

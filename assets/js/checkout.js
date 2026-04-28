@@ -47,29 +47,32 @@ function displayCart(data) {
         const instructions = item.special_instructions
             ? item.special_instructions
             : 'none';
+        const itemImage = item.image_url || 'Coffee/SpanishLatte.png';
         const itemHTML = `
             <div class="cart-item" data-cart-id="${item.id}">
                 <div class="cart-item-image">
-                    <img src="Coffee/SpanishLatte.png" alt="${item.name}">
+                    <img src="${itemImage}" alt="${item.name}">
                 </div>
                 <div class="cart-item-details">
-                    <div class="cart-item-meta">
-                        <p class="cart-item-name">${item.name}</p>
-                        <div class="cart-item-actions">
-                            <div class="cart-qty-view" aria-label="Quantity ${quantity}">
-                                <button type="button" class="cart-qty-btn" data-action="decrease" title="Decrease quantity">−</button>
-                                <span class="cart-qty-count">${quantity}</span>
-                                <button type="button" class="cart-qty-btn" data-action="increase" title="Increase quantity">+</button>
-                            </div>
-                            <button type="button" class="cart-delete-btn" data-action="delete" title="Remove item">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
+                    <p class="cart-item-name">${item.name}</p>
                     <p class="cart-item-info">${item.category || 'Coffee'}</p>
                     <p class="cart-item-info">size: ${item.size}</p>
-                    <p class="cart-item-info">Special Instructions: ${instructions}</p>
-                    <p class="cart-item-info">Qty: ${quantity} x ${itemPrice.toFixed(2)}P = ${itemTotal.toFixed(2)}P</p>
+                    ${instructions !== 'none' ? `<p class="cart-item-instructions">${instructions}</p>` : ''}
+                    <div class="cart-item-footer">
+                        <div class="cart-qty-view">
+                            <button type="button" class="cart-qty-btn" data-action="decrease" title="Decrease quantity">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <input type="number" class="cart-qty-input" value="${quantity}" min="1" data-action="input" title="Enter quantity">
+                            <button type="button" class="cart-qty-btn" data-action="increase" title="Increase quantity">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <p class="cart-item-price">${itemTotal.toFixed(2)}P</p>
+                        <button type="button" class="cart-delete-btn" data-action="delete" title="Remove item">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
@@ -80,6 +83,34 @@ function displayCart(data) {
     subtotalEl.textContent = parseFloat(totals.subtotal || 0).toFixed(2) + 'P';
     shippingEl.textContent = parseFloat(totals.shipping || 0).toFixed(2) + 'P';
     totalEl.textContent = parseFloat(totals.total || 0).toFixed(2) + 'P';
+
+    // Add event listeners for quantity inputs
+    const quantityInputs = cartItemsContainer.querySelectorAll('.cart-qty-input');
+    quantityInputs.forEach(input => {
+        input.addEventListener('change', function(e) {
+            const cartItem = e.target.closest('.cart-item');
+            if (cartItem) {
+                const cartId = parseInt(cartItem.dataset.cartId, 10);
+                const newQty = Math.max(1, parseInt(this.value, 10) || 1);
+                if (cartId && newQty !== parseInt(this.dataset.originalValue || 1, 10)) {
+                    updateCartItemQuantity(cartId, newQty);
+                }
+            }
+        });
+
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const cartItem = e.target.closest('.cart-item');
+                if (cartItem) {
+                    const cartId = parseInt(cartItem.dataset.cartId, 10);
+                    const newQty = Math.max(1, parseInt(this.value, 10) || 1);
+                    if (cartId) {
+                        updateCartItemQuantity(cartId, newQty);
+                    }
+                }
+            }
+        });
+    });
 }
 
 function displayEmptyCart() {
@@ -100,6 +131,11 @@ function handleCartAction(event) {
         return;
     }
 
+    // Don't handle input field value changes here - let the input handlers deal with it
+    if (actionTarget.classList.contains('cart-qty-input')) {
+        return;
+    }
+
     const cartItemEl = actionTarget.closest('.cart-item');
     if (!cartItemEl) {
         return;
@@ -116,9 +152,15 @@ function handleCartAction(event) {
         return;
     }
 
-    const quantityEl = cartItemEl.querySelector('.cart-qty-count');
-    const currentQty = Math.max(1, parseInt(quantityEl ? quantityEl.textContent : '1', 10) || 1);
-    const nextQty = action === 'decrease' ? currentQty - 1 : currentQty + 1;
+    const quantityInput = cartItemEl.querySelector('.cart-qty-input');
+    const currentQty = Math.max(1, parseInt(quantityInput ? quantityInput.value : '1', 10) || 1);
+    
+    let nextQty = currentQty;
+    if (action === 'decrease') {
+        nextQty = currentQty - 1;
+    } else if (action === 'increase') {
+        nextQty = currentQty + 1;
+    }
 
     if (nextQty < 1) {
         removeCartItem(cartId);

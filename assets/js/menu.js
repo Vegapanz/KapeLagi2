@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchInput');
     const menuSubtitle = document.querySelector('.menu-subtitle');
     const productModal = new bootstrap.Modal(document.getElementById('productModal'));
+    const modalProductImage = document.getElementById('modalProductImage');
     const quantityInput = document.getElementById('quantityInput');
     const minusBtn = document.querySelector('.qty-btn.minus');
     const plusBtn = document.querySelector('.qty-btn.plus');
@@ -73,6 +74,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const productId = card.dataset.productId;
         const productName = card.dataset.productName;
         const productDesc = card.dataset.productDesc;
+        const productImage = card.dataset.productImage || card.querySelector('img')?.getAttribute('src') || 'Coffee/SpanishLatte.png';
         const price16 = parsePriceValue(
             card.getAttribute('data-price-16oz') ||
             card.getAttribute('data-price-16') ||
@@ -88,6 +90,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         modalProductName.textContent = productName;
         modalProductDesc.textContent = productDesc;
+        if (modalProductImage) {
+            modalProductImage.src = productImage;
+            modalProductImage.alt = productName;
+        }
 
         // Keep product prices in modal state to guarantee recalculation works.
         modalProductName.dataset.price16 = String(price16);

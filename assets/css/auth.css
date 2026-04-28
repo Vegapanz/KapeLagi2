@@ -4,9 +4,7 @@
 
 /* Auth Page Background */
 .auth-page {
-    background-color: #D4C8B8;
-    background-image: 
-        linear-gradient(135deg, #D4C8B8 0%, #E8DCC8 100%);
+    background: #E8E0D0 url('../Images/Desktop - 13.png') center center / cover no-repeat;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -160,6 +158,8 @@
 }
 
 .auth-input {
+    width: 100%;
+    box-sizing: border-box;
     padding: 0.9rem 1.2rem;
     border: none;
     border-radius: 12px;
@@ -178,6 +178,53 @@
     outline: none;
     box-shadow: 0 0 0 3px rgba(161, 124, 92, 0.2);
     transform: translateY(-2px);
+}
+
+/* Email Verification Group */
+.email-verification-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.email-verification-group .auth-input {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.email-verify-btn {
+    padding: 0.9rem 1.2rem;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #8B6F47 0%, #A17C5C 100%);
+    color: #F5F1E8;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-body);
+}
+
+.email-verify-btn:hover {
+    background: linear-gradient(135deg, #7A5D3B 0%, #8B6F47 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(139, 111, 71, 0.3);
+}
+
+.email-verify-btn:active {
+    transform: translateY(0);
+}
+
+.email-verify-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
 }
 
 /* Forgot Password Link */
@@ -283,11 +330,73 @@
     color: #F5F1E8;
 }
 
+.terms-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    font-family: var(--font-body);
+    font-size: 0.92rem;
+    color: #D6D0C4;
+    line-height: 1.45;
+}
+
+.terms-check input[type="checkbox"] {
+    margin-top: 0.18rem;
+    width: 16px;
+    height: 16px;
+    accent-color: #E8E0D0;
+    cursor: pointer;
+}
+
+.terms-check a {
+    color: #E8E0D0;
+}
+
+.terms-check a:hover {
+    color: #F5F1E8;
+}
+
 /* Password Requirements */
 .password-group {
     display: flex;
     flex-direction: column;
     gap: 0.8rem;
+}
+
+.password-confirm-group {
+    position: relative;
+    width: 100%;
+}
+
+.password-confirm-group .auth-input {
+    padding-right: 11rem;
+}
+
+.password-match-status {
+    position: absolute;
+    right: 0.95rem;
+    top: 50%;
+    transform: translateY(-50%);
+    max-width: calc(100% - 2rem);
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.1;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    color: transparent;
+    z-index: 1;
+}
+
+.password-match-status.match {
+    color: #2f7d46;
+}
+
+.password-match-status.mismatch {
+    color: #b23a3a;
 }
 
 .password-requirements {
@@ -337,6 +446,32 @@
     color: #f4a8a8;
 }
 
+/* Verification message in modal */
+.verification-message {
+    min-height: 24px;
+    margin-bottom: 1rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: none;
+}
+
+.verification-message.error {
+    display: block;
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.verification-message.success {
+    display: block;
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
 /* Character Section */
 .auth-character-section {
     flex: 1;
@@ -347,6 +482,18 @@
     padding: 2rem;
     position: relative;
     overflow: hidden;
+}
+
+.auth-image-section {
+    padding: 0;
+    background: #1a0f0a;
+}
+
+.auth-side-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 
 .character-container {
@@ -522,6 +669,11 @@
     .auth-character-section {
         padding: 2rem;
         min-height: 300px;
+    }
+
+    .auth-image-section {
+        padding: 0;
+        min-height: 280px;
     }
     
     .password-requirements {

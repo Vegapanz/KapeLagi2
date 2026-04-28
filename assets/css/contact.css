@@ -4,9 +4,7 @@
 
 /* Contact Page Background */
 .contact-section {
-    background-color: #8B8680;
-    background-image: 
-        linear-gradient(135deg, #8B8680 0%, #9B9690 100%);
+    background: #E8E0D0 url('../Images/Desktop - 13.png') center center / cover no-repeat;
     min-height: 100vh;
     display: flex;
     align-items: center;
