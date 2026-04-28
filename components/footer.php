@@ -31,10 +31,10 @@
                 <div class="col-md-3 text-center mb-4 mb-md-0">
                     <h4 class="footer-title">Socials</h4>
                     <div class="footer-socials">
-                        <a href="#" class="social-link" title="Facebook">
+                        <a href="https://www.facebook.com/profile.php?id=61564975820078" target="_blank" class="social-link" title="Facebook">
                             <i class="fab fa-facebook"></i>
                         </a>
-                        <a href="#" class="social-link" title="Instagram">
+                        <a href="https://www.instagram.com/kape.lagi" target="_blank" class="social-link" title="Instagram">
                             <i class="fab fa-instagram"></i>
                         </a>
                     </div>

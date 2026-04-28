@@ -18,10 +18,19 @@ if (!function_exists('is_logged_in')) {
         return isset($_SESSION['user_name']) ? $_SESSION['user_name'] : null;
     }
 
-    function login_user($user_id, $user_name, $user_email) {
+    function login_user($user_id, $user_name, $user_email, $role = 'customer') {
         $_SESSION['user_id'] = $user_id;
         $_SESSION['user_name'] = $user_name;
         $_SESSION['user_email'] = $user_email;
+        $_SESSION['role'] = $role;
+    }
+
+    function get_user_role() {
+        return isset($_SESSION['role']) ? $_SESSION['role'] : 'customer';
+    }
+
+    function is_admin() {
+        return isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
     }
 
     function logout_user() {

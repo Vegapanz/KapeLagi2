@@ -10,6 +10,10 @@ $sql_users = "CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
+    email_verified_at DATETIME NULL,
+    email_verification_token VARCHAR(64) NULL,
+    terms_accepted_at DATETIME NULL,
+    terms_version VARCHAR(20) NULL,
     phone VARCHAR(20),
     address VARCHAR(255),
     city VARCHAR(50),
@@ -104,12 +108,32 @@ if ($conn->query($sql_order_items) === TRUE) {
 
 // Insert sample products
 $sample_products = [
-    ["Spanish Latte", "A sweet, creamy espresso-based drink made by combining espresso with both regular milk and sweetened condensed milk", "Coffee", 120, 120],
-    ["Americano", "A classic espresso stretched with hot water for a smooth, full-bodied flavor", "Coffee", 100, 100],
-    ["Blueberry Milk", "Smooth blueberry flavor combined with creamy milk", "Non-Coffee", 110, 110],
-    ["Matcha Latte", "Vibrant green tea powder whisked with hot milk for a refreshing drink", "Coffee", 130, 130],
-    ["Caramel Macchiato", "Rich caramel sauce layered with espresso and velvety steamed milk", "Coffee", 120, 120],
-    ["Vanilla Latte", "Smooth vanilla flavor combined with espresso and creamy milk", "Coffee", 110, 110]
+    ["Americano", "Coffee", "Coffee/Americano.png", 100, 120],
+    ["Berry Matcha", "Fruity", "Coffee/BerryMatcha.png", 120, 140],
+    ["Biscoff Latte", "Coffee", "Coffee/BiscoffLatte.png", 130, 150],
+    ["Blueberry Milk", "Non-Coffee", "Coffee/Blueberry Milk.png", 110, 130],
+    ["Blueberry", "Fruity", "Coffee/Blueberry.png", 110, 130],
+    ["Blueberry Choco", "Non-Coffee", "Coffee/BlueberryChoco.png", 115, 135],
+    ["Blueberry Espresso", "Coffee", "Coffee/BlueberryEspresso.png", 125, 145],
+    ["Blueberry Matcha", "Fruity", "Coffee/BlueberryMAtcha.png", 120, 140],
+    ["Caramel Macchiato", "Coffee", "Coffee/CaramelMacchiato.png", 120, 140],
+    ["Choco Berry", "Non-Coffee", "Coffee/ChocoBerry.png", 115, 135],
+    ["Choco Matcha", "Non-Coffee", "Coffee/ChocoMatcha.png", 120, 140],
+    ["Dirty Matcha", "Coffee", "Coffee/Dirty Matcha.png", 130, 150],
+    ["French Vanilla", "Coffee", "Coffee/FrenchVanilla.png", 110, 130],
+    ["Green Apple", "Fruity", "Coffee/GreenApple.png", 110, 130],
+    ["Hazelnut Latte", "Coffee", "Coffee/HazelnutLatte.png", 120, 140],
+    ["Icy Choco", "Non-Coffee", "Coffee/IcyChoco.png", 115, 135],
+    ["Lemonade", "Fruity", "Coffee/Lemonade.png", 100, 120],
+    ["Lychee", "Fruity", "Coffee/Lychee.png", 110, 130],
+    ["Matcha Latte", "Coffee", "Coffee/MatchaLatte.png", 130, 150],
+    ["Mocha Latte", "Coffee", "Coffee/MochaLatte.png", 125, 145],
+    ["Nutella Latte", "Coffee", "Coffee/NutellaLatte.png", 130, 150],
+    ["Salted Caramel Latte", "Coffee", "Coffee/SaltedCaramelLatte.png", 130, 150],
+    ["Spanish Latte", "Coffee", "Coffee/SpanishLatte.png", 120, 140],
+    ["Strawberry Milk", "Fruity", "Coffee/StrawberryMilk.png", 110, 130],
+    ["Vanilla Latte", "Coffee", "Coffee/VanillaLatte.png", 110, 130],
+    ["Vietnamese", "Coffee", "Coffee/Vietnamese.png", 120, 140]
 ];
 
 foreach ($sample_products as $product) {
@@ -117,8 +141,9 @@ foreach ($sample_products as $product) {
     $result = $conn->query($check_sql);
     
     if ($result->num_rows == 0) {
-        $insert_sql = "INSERT INTO products (name, description, category, price_16oz, price_22oz) 
+        $insert_sql = "INSERT INTO products (name, description, category, image_url, price_16oz, price_22oz) 
                        VALUES ('" . $conn->real_escape_string($product[0]) . "', 
+                               '" . $conn->real_escape_string($product[0] . " is a signature KapeLagi drink crafted for a smooth, café-style finish.") . "', 
                                '" . $conn->real_escape_string($product[1]) . "', 
                                '" . $conn->real_escape_string($product[2]) . "', 
                                " . $product[3] . ", 

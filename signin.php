@@ -20,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign In - KapeLagi</title>
+    <link rel="icon" type="image/png" href="assets/Images/favicon.png">
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -86,21 +87,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </p>
             </div>
             
-            <!-- Character Section -->
-            <div class="auth-character-section">
-                <div class="character-container">
-                    <div class="character">
-                        <div class="head"></div>
-                        <div class="body"></div>
-                        <div class="arm arm-left"></div>
-                        <div class="arm arm-right"></div>
-                        <div class="leg leg-left"></div>
-                        <div class="leg leg-right"></div>
-                    </div>
-                    <div class="coffee-icon">
-                        <div class="cup"></div>
-                    </div>
-                </div>
+            <!-- Image Section -->
+            <div class="auth-character-section auth-image-section">
+                <img src="assets/Images/coffee4.jpg" alt="Freshly brewed coffee" class="auth-side-image">
             </div>
         </div>
     </div>

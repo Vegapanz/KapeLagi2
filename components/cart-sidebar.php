@@ -63,18 +63,34 @@
         cartItems.forEach(item => {
             html += `
                 <div class="cart-item">
-                    <img src="${item.image_url || 'assets/images/placeholder.jpg'}" alt="${item.name}" class="cart-item-image">
-                    <div class="cart-item-details">
-                        <h4 class="cart-item-name">${item.name}</h4>
-                        <p class="cart-item-category">${item.category}</p>
-                        <p class="cart-item-size">size: ${item.size}</p>
-                        <p class="cart-item-qty">Qty: ${item.quantity}</p>
-                        ${item.special_instructions ? `<p class="cart-item-instructions">Special Instructions: ${item.special_instructions}</p>` : ''}
+                    <div class="cart-item-image-wrapper">
+                        <img src="${item.image_url || 'assets/images/placeholder.jpg'}" alt="${item.name}" class="cart-item-image">
                     </div>
-                    <div class="cart-item-price">${parseFloat(item.total_price).toFixed(2)}₱</div>
-                    <button class="cart-item-remove" onclick="removeFromCart(${item.id})" title="Remove">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <div class="cart-item-content">
+                        <div class="cart-item-header">
+                            <div>
+                                <h4 class="cart-item-name">${item.name}</h4>
+                                <p class="cart-item-category">${item.category}</p>
+                                <p class="cart-item-size">size: ${item.size}</p>
+                                ${item.special_instructions ? `<p class="cart-item-instructions">${item.special_instructions}</p>` : ''}
+                            </div>
+                            <button class="cart-item-remove" onclick="removeFromCart(${item.id})" title="Remove">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        <div class="cart-item-footer">
+                            <div class="quantity-controls">
+                                <button class="qty-btn" onclick="updateQuantity(${item.id}, parseInt(document.getElementById('qty-${item.id}').value) - 1)">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <input type="number" id="qty-${item.id}" class="qty-input" value="${item.quantity}" min="1" onchange="updateQuantity(${item.id}, Math.max(1, parseInt(this.value) || 1))" onkeypress="if(event.key==='Enter') updateQuantity(${item.id}, Math.max(1, parseInt(this.value) || 1))">
+                                <button class="qty-btn" onclick="updateQuantity(${item.id}, parseInt(document.getElementById('qty-${item.id}').value) + 1)">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <div class="cart-item-price">${parseFloat(item.total_price).toFixed(2)}₱</div>
+                        </div>
+                    </div>
                 </div>
             `;
         });
@@ -131,6 +147,32 @@
                 onConfirm();
             }
         });
+    }
+
+    function updateQuantity(cartId, newQuantity) {
+        // Don't allow quantity less than 1
+        if (newQuantity < 1) {
+            removeFromCart(cartId);
+            return;
+        }
+
+        fetch('api/cart.php?action=update_cart', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'cart_id=' + cartId + '&quantity=' + newQuantity
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadCartItems();
+                if (window.KapeNotify) {
+                    window.KapeNotify.toastInfo('Quantity updated.', 'Updated');
+                }
+            }
+        })
+        .catch(error => console.error('Error updating quantity:', error));
     }
 
     // Open/close cart sidebar
