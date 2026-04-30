@@ -166,10 +166,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <span>OR</span>
                 </div>
                 
-                <button class="auth-btn google-btn">
+                <a class="auth-btn google-btn" href="auth/google_start.php">
                     <span class="google-icon">G</span>
                     Continue with Google
-                </button>
+                </a>
                 
                 <p class="auth-link-text">
                     Already have account? <a href="signin.php" class="auth-link">Sign in</a>

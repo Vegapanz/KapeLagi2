@@ -6,7 +6,7 @@
                 <div class="col-md-3 text-center text-md-start mb-4 mb-md-0 d-flex align-items-end justify-content-center justify-content-md-start">
                     <h3 class="footer-logo">KAPELAGI</h3>
                 </div>
-                
+
                 <!-- Quick Links -->
                 <div class="col-md-3 text-center mb-4 mb-md-0">
                     <h4 class="footer-title">Quick Links</h4>
@@ -16,17 +16,23 @@
                         <li><a href="menu.php">Menu</a></li>
                     </ul>
                 </div>
-                
+
                 <!-- Contact Section -->
                 <div class="col-md-3 text-center mb-4 mb-md-0">
                     <h4 class="footer-title">Contact</h4>
                     <div class="footer-info">
-                        <p><i class="fas fa-map-marker-alt" aria-hidden="true"></i>Area D, Dasmariñas Cavite</p>
-                        <p><i class="fas fa-phone" aria-hidden="true"></i>(0910)-872-3273</p>
-                        <p><i class="fas fa-envelope" aria-hidden="true"></i>kapelagi@kapelagi.shop</p>
+                        <a href="https://maps.app.goo.gl/c5i3SdpAe2mdn9D68" target="_blank">
+                            <p><i class="fas fa-map-marker-alt" aria-hidden="true"></i>Area C, Dasmariñas Cavite</p>
+                        </a>
+                        <a href="#">
+                            <p><i class="fas fa-phone" aria-hidden="true"></i>(0910)-872-3273</p>
+                        </a>
+                        <a href="mailto:kapelagidasma@gmail.com" target="_blank">
+                            <p><i class="fas fa-envelope" aria-hidden="true"></i>kapelagidasma@gmail.com</p>
+                        </a>
                     </div>
                 </div>
-                
+
                 <!-- Socials -->
                 <div class="col-md-3 text-center mb-4 mb-md-0">
                     <h4 class="footer-title">Socials</h4>
@@ -40,12 +46,12 @@
                     </div>
                 </div>
             </div>
-            
-            
-            
+
+
+
             <!-- Copyright Divider -->
             <hr class="footer-divider-copyright">
-            
+
             <!-- Copyright -->
             <div class="footer-bottom">
                 <p class="copyright-text">© 2024 KapeLagi. All Rights Reserved</p>

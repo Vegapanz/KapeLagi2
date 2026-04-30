@@ -11,6 +11,9 @@ $sql_users = "CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     email_verified_at DATETIME NULL,
+    google_id VARCHAR(191) NULL,
+    oauth_provider VARCHAR(20) NULL,
+    oauth_avatar_url VARCHAR(255) NULL,
     email_verification_token VARCHAR(64) NULL,
     terms_accepted_at DATETIME NULL,
     terms_version VARCHAR(20) NULL,
@@ -54,6 +57,7 @@ $sql_orders = "CREATE TABLE IF NOT EXISTS orders (
     delivery_address VARCHAR(255),
     city VARCHAR(50),
     province VARCHAR(50),
+    payment_method VARCHAR(20) NOT NULL DEFAULT 'COD',
     total_amount DECIMAL(10, 2),
     status VARCHAR(20) DEFAULT 'pending',
     special_notes TEXT,
@@ -109,13 +113,13 @@ if ($conn->query($sql_order_items) === TRUE) {
 // Insert sample products
 $sample_products = [
     ["Americano", "Coffee", "Coffee/Americano.png", 100, 120],
-    ["Berry Matcha", "Fruity", "Coffee/BerryMatcha.png", 120, 140],
+    ["Berry Matcha", "Non-Coffee", "Coffee/BerryMatcha.png", 120, 140],
     ["Biscoff Latte", "Coffee", "Coffee/BiscoffLatte.png", 130, 150],
     ["Blueberry Milk", "Non-Coffee", "Coffee/Blueberry Milk.png", 110, 130],
     ["Blueberry", "Fruity", "Coffee/Blueberry.png", 110, 130],
     ["Blueberry Choco", "Non-Coffee", "Coffee/BlueberryChoco.png", 115, 135],
     ["Blueberry Espresso", "Coffee", "Coffee/BlueberryEspresso.png", 125, 145],
-    ["Blueberry Matcha", "Fruity", "Coffee/BlueberryMAtcha.png", 120, 140],
+    ["Blueberry Matcha", "Non-Coffee", "Coffee/BlueberryMAtcha.png", 120, 140],
     ["Caramel Macchiato", "Coffee", "Coffee/CaramelMacchiato.png", 120, 140],
     ["Choco Berry", "Non-Coffee", "Coffee/ChocoBerry.png", 115, 135],
     ["Choco Matcha", "Non-Coffee", "Coffee/ChocoMatcha.png", 120, 140],
@@ -131,7 +135,7 @@ $sample_products = [
     ["Nutella Latte", "Coffee", "Coffee/NutellaLatte.png", 130, 150],
     ["Salted Caramel Latte", "Coffee", "Coffee/SaltedCaramelLatte.png", 130, 150],
     ["Spanish Latte", "Coffee", "Coffee/SpanishLatte.png", 120, 140],
-    ["Strawberry Milk", "Fruity", "Coffee/StrawberryMilk.png", 110, 130],
+    ["Strawberry Milk", "Non-Coffee", "Coffee/StrawberryMilk.png", 110, 130],
     ["Vanilla Latte", "Coffee", "Coffee/VanillaLatte.png", 110, 130],
     ["Vietnamese", "Coffee", "Coffee/Vietnamese.png", 120, 140]
 ];

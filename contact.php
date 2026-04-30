@@ -1,11 +1,22 @@
 <?php
+require_once __DIR__ . '/vendor/autoload.php';
+
+if (file_exists(__DIR__ . '/config/mail.php')) {
+    require_once __DIR__ . '/config/mail.php';
+}
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
 // Simple contact form processing with PH mobile validation
 $contact_error = '';
 $contact_success = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
     $email = trim($_POST['email'] ?? '');
     $message = trim($_POST['message'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
+    $name = trim($_POST['name'] ?? '');
 
     if ($email === '' || $message === '') {
         $contact_error = 'Email and message are required.';
@@ -14,38 +25,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
     } elseif ($phone !== '' && !preg_match('/^(?:\+63|0)9[0-9]{9}$/', $phone)) {
         $contact_error = 'Phone must be a Philippine mobile number (e.g. 09171234567 or +639171234567).';
     } else {
-        // For now we won't send email; just acknowledge receipt.
-        $contact_success = 'Thanks — your message was received.';
-        // Clear inputs to avoid duplicate submission
-        $_POST = array();
+        $recipientEmail = defined('MAILER_USERNAME') && MAILER_USERNAME !== ''
+            ? MAILER_USERNAME
+            : (defined('MAILER_FROM_ADDRESS') ? MAILER_FROM_ADDRESS : 'kapelagidasma@gmail.com');
+        $recipientName = defined('MAILER_FROM_NAME') && MAILER_FROM_NAME !== ''
+            ? MAILER_FROM_NAME
+            : 'KapeLagi';
+
+        $subject = 'New contact form message from KapeLagi';
+        $body = "You received a new message from the KapeLagi contact form.\n\n"
+            . "Email: {$email}\n"
+            . "Name: " . ($name !== '' ? $name : 'N/A') . "\n"
+            . "Phone: " . ($phone !== '' ? $phone : 'N/A') . "\n\n"
+            . "Message:\n{$message}\n";
+
+        $mailer = new PHPMailer(true);
+
+        try {
+            if (defined('MAILER_USE_SMTP') && MAILER_USE_SMTP) {
+                $smtpUser = defined('MAILER_USERNAME') ? trim((string) MAILER_USERNAME) : '';
+                $smtpPass = defined('MAILER_PASSWORD') ? trim((string) MAILER_PASSWORD) : '';
+
+                if ($smtpUser === '' || $smtpPass === '') {
+                    throw new Exception('SMTP is enabled but the mail credentials are missing.');
+                }
+
+                $mailer->isSMTP();
+                $mailer->Host = defined('MAILER_HOST') ? MAILER_HOST : 'smtp.gmail.com';
+                $mailer->SMTPAuth = true;
+                $mailer->Username = $smtpUser;
+                $mailer->Password = $smtpPass;
+                $mailer->SMTPSecure = defined('MAILER_ENCRYPTION') ? MAILER_ENCRYPTION : PHPMailer::ENCRYPTION_STARTTLS;
+                $mailer->Port = defined('MAILER_PORT') ? (int) MAILER_PORT : 587;
+            }
+
+            $fromAddress = defined('MAILER_FROM_ADDRESS') ? MAILER_FROM_ADDRESS : 'no-reply@kapelagi.local';
+            $fromName = defined('MAILER_FROM_NAME') ? MAILER_FROM_NAME : 'KapeLagi';
+
+            $mailer->setFrom($fromAddress, $fromName);
+            $mailer->addAddress($recipientEmail, $recipientName);
+            $mailer->addReplyTo($email, $name !== '' ? $name : $email);
+            $mailer->Subject = $subject;
+            $mailer->isHTML(true);
+            $mailer->Body = nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8'));
+            $mailer->AltBody = $body;
+
+            $mailer->send();
+            $contact_success = 'Thanks — your message was sent successfully.';
+            $_POST = array();
+        } catch (Exception $e) {
+            $contact_error = 'Sorry, your message could not be sent right now.';
+        }
     }
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact - KapeLagi</title>
     <link rel="icon" type="image/png" href="assets/Images/favicon.png">
-    
+
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Smooch+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-    
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="stylesheet" href="assets/css/contact.css">
 </head>
+
 <body>
     <!-- Navigation Bar -->
     <?php include 'components/navbar.php'; ?>
-    
+
     <!-- Coffee Bean Decorations
     <div class="coffee-bean bean-1"></div>
     <div class="coffee-bean bean-2"></div>
@@ -54,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
     <div class="coffee-bean bean-5"></div>
     <div class="coffee-bean bean-6"></div>
     <div class="coffee-bean bean-7"></div> -->
-    
+
     <!-- Contact Section -->
     <section class="contact-section">
         <div class="contact-container">
@@ -62,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
                 <!-- Form Section -->
                 <div class="contact-form-wrapper">
                     <h2 class="contact-title">Contact</h2>
-                    
+
                     <form class="contact-form" id="contactForm" method="post" action="contact.php">
                         <?php if ($contact_error): ?>
                             <div class="alert alert-danger" role="alert"><?php echo htmlspecialchars($contact_error); ?></div>
@@ -71,9 +131,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
                         <?php endif; ?>
                         <div class="form-group">
                             <label class="contact-label">Email:</label>
-                            <input type="email" class="contact-input" placeholder="Your Email" required>
+                            <input type="email" name="email" class="contact-input" placeholder="Your Email" required value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
                         </div>
-                        
+
+                        <div class="form-group">
+                            <label class="contact-label">Name (optional):</label>
+                            <input type="text" name="name" class="contact-input" placeholder="Your Name" value="<?php echo htmlspecialchars($_POST['name'] ?? ''); ?>">
+                        </div>
+
                         <div class="form-group">
                             <label class="contact-label">Phone (optional):</label>
                             <input type="tel" name="phone" id="contact-phone" class="contact-input" placeholder="09171234567 or +639171234567" inputmode="numeric" pattern="^(?:\+63|0)9[0-9]{9}$" maxlength="13" value="<?php echo htmlspecialchars($_POST['phone'] ?? ''); ?>">
@@ -83,47 +148,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
                             <label class="contact-label">Message:</label>
                             <textarea name="message" class="contact-textarea" placeholder="Your Message" rows="5" required><?php echo htmlspecialchars($_POST['message'] ?? ''); ?></textarea>
                         </div>
-                        
+
                         <button type="submit" name="contact_submit" class="contact-btn">Submit</button>
                     </form>
                 </div>
-                
+
                 <!-- Contact Info Section -->
                 <div class="contact-info-wrapper">
                     <div class="contact-info-item">
-                        <i class="fab fa-facebook-f contact-icon"></i>
-                        <span class="contact-info-text">KapeLagi</span>
+                        <a href="https://www.facebook.com/profile.php?id=61564975820078" target="_blank">
+                            <i class="fab fa-facebook-f contact-icon"></i>
+                            <span class="contact-info-text">KapeLagi</span>
+                        </a>
                     </div>
-                    
+
                     <div class="contact-info-item">
-                        <i class="fab fa-instagram contact-icon"></i>
-                        <span class="contact-info-text">Kape.Lagi</span>
+                        <a href="https://www.instagram.com/kape.lagi" target="_blank">
+                            <i class="fab fa-instagram contact-icon"></i>
+                            <span class="contact-info-text">Kape.Lagi</span>
+                        </a>
                     </div>
-                    
+
                     <div class="contact-info-item">
-                        <i class="fas fa-phone contact-icon"></i>
-                        <span class="contact-info-text">0910-827-3237</span>
+                        <a href="tel:(0910)-872-3273" target="_blank">
+                            <i class="fas fa-phone contact-icon"></i>
+                            <span class="contact-info-text">0910-827-3237</span></a>
                     </div>
-                    
+
                     <div class="contact-info-item">
-                        <i class="fas fa-map-marker-alt contact-icon"></i>
-                        <span class="contact-info-text">Area C, Dasmariñas Cavite</span>
+                        <a href="https://maps.app.goo.gl/c5i3SdpAe2mdn9D68" target="_blank"><i class="fas fa-map-marker-alt contact-icon"></i>
+                            <span class="contact-info-text">Area C, Dasmariñas Cavite</span></a>
                     </div>
                 </div>
             </div>
         </div>
     </section>
-    
+
     <!-- Footer -->
     <?php include 'components/footer.php'; ?>
-    
+
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JavaScript -->
     <script src="assets/js/script.js"></script>
     <script>
         // Restrict contact phone input to digits and optional leading +
-        (function(){
+        (function() {
             const phone = document.getElementById('contact-phone');
             if (!phone) return;
             phone.addEventListener('input', () => {
@@ -141,4 +211,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
         })();
     </script>
 </body>
+
 </html>
