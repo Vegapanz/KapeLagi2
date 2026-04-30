@@ -273,6 +273,15 @@
     align-items: center;
     justify-content: center;
     gap: 0.8rem;
+    text-decoration: none !important;
+    width: 100%;
+}
+
+.google-btn:hover,
+.google-btn:visited,
+.google-btn:active,
+.google-btn:focus {
+    text-decoration: none !important;
 }
 
 .google-btn:hover {

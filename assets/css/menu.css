@@ -3,7 +3,7 @@
    ========================================== */
 
 .menu-section {
-    background: linear-gradient(90deg, #3a2419 0%, #4a3022 50%, #3a2419 100%);
+    background: #1a0f0a;
     padding: 2.2rem 0 2rem;
     min-height: calc(100vh - 92px);
 }

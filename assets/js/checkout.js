@@ -68,7 +68,7 @@ function displayCart(data) {
                                 <i class="fas fa-plus"></i>
                             </button>
                         </div>
-                        <p class="cart-item-price">${itemTotal.toFixed(2)}P</p>
+                        <p class="cart-item-price">${itemTotal.toFixed(2)} ₱</p>
                         <button type="button" class="cart-delete-btn" data-action="delete" title="Remove item">
                             <i class="fas fa-trash"></i>
                         </button>
@@ -80,9 +80,9 @@ function displayCart(data) {
     });
     
     // Update totals
-    subtotalEl.textContent = parseFloat(totals.subtotal || 0).toFixed(2) + 'P';
-    shippingEl.textContent = parseFloat(totals.shipping || 0).toFixed(2) + 'P';
-    totalEl.textContent = parseFloat(totals.total || 0).toFixed(2) + 'P';
+    subtotalEl.textContent = parseFloat(totals.subtotal || 0).toFixed(2) + '₱';
+    shippingEl.textContent = parseFloat(totals.shipping || 0).toFixed(2) + '₱';
+    totalEl.textContent = parseFloat(totals.total || 0).toFixed(2) + '₱';
 
     // Add event listeners for quantity inputs
     const quantityInputs = cartItemsContainer.querySelectorAll('.cart-qty-input');
@@ -120,9 +120,9 @@ function displayEmptyCart() {
     const totalEl = document.getElementById('total');
 
     cartItemsContainer.innerHTML = '<p class="cart-item-info">Your cart is empty.</p>';
-    subtotalEl.textContent = '0.00P';
-    shippingEl.textContent = '0.00P';
-    totalEl.textContent = '0.00P';
+    subtotalEl.textContent = '0.00 ₱';
+    shippingEl.textContent = '0.00 ₱';
+    totalEl.textContent = '0.00 ₱';
 }
 
 function handleCartAction(event) {
@@ -226,6 +226,12 @@ function removeCartItem(cartId) {
 }
 
 function submitOrder() {
+    // Require phone verification before placing the order
+    if (!window.checkoutPhoneVerified) {
+        window.KapeNotify.popup('Verification Required', 'Please verify your phone number first.', 'warning');
+        return;
+    }
+    
     const form = document.getElementById('checkoutForm');
     
     if (!form.checkValidity()) {
@@ -242,6 +248,14 @@ function submitOrder() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            if (data.payment_redirect_url) {
+                window.KapeNotify.popup('Redirecting to GCash', 'Please complete your payment in PayMongo.', 'info')
+                    .then(function () {
+                        window.location.href = data.payment_redirect_url;
+                    });
+                return;
+            }
+
             window.KapeNotify.popup('Order Placed', 'Order placed successfully! Order ID: ' + data.order_id, 'success')
                 .then(function () {
                     window.location.href = 'index.php';

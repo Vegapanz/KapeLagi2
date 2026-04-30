@@ -200,6 +200,7 @@
     display: flex;
     align-items: center;
     gap: 1.2rem;
+    ;
 }
 
 .contact-icon {
@@ -220,10 +221,15 @@
     font-size: 1.1rem;
     color: #E8E0D0;
     transition: color 0.3s ease;
+    text-decoration: none;
 }
 
 .contact-info-item:hover .contact-info-text {
     color: var(--color-accent);
+}
+
+.contact-info-wrapper a {
+    text-decoration: none;
 }
 
 /* ==========================================

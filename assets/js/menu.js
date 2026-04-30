@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function updatePriceDisplay() {
         const activeSize = document.querySelector('.size-btn.active');
         if (!activeSize) {
-            totalPriceEl.textContent = '0.00P';
+            totalPriceEl.textContent = '0.00₱';
             return;
         }
 
@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
         quantityInput.value = quantity;
         const total = price * quantity;
         
-        totalPriceEl.textContent = total.toFixed(2) + 'P';
+        totalPriceEl.textContent = total.toFixed(2) + '₱';
     }
     
     // Add to cart

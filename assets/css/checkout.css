@@ -84,7 +84,7 @@
 
 .form-input {
     width: 100%;
-    height: 38px;
+    height: 50px;
     border: 1px solid #8f8879;
     border-radius: 8px;
     background: #d9d7cd;
@@ -117,11 +117,35 @@
     border-radius: 10px;
     min-height: 190px;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 1rem 1.15rem;
     color: rgba(26, 15, 10, 0.56);
     font-family: var(--font-body);
     font-size: 1rem;
+}
+
+.payment-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    width: 100%;
+}
+
+.payment-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #1a0f0a;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.payment-option input {
+    accent-color: #4a3022;
+    width: 1rem;
+    height: 1rem;
 }
 
 /* Order summary: match first reference */
@@ -283,6 +307,8 @@
 }
 
 .cart-qty-input[type=number] {
+
+    appearance: textfield;
     -moz-appearance: textfield;
 }
 

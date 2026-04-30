@@ -3,6 +3,21 @@ header('Content-Type: application/json');
 include '../config/db.php';
 include '../config/session.php';
 
+function ensure_order_payment_method_column($conn) {
+    static $checked = false;
+    if ($checked) {
+        return;
+    }
+
+    $checkSql = "SHOW COLUMNS FROM orders LIKE 'payment_method'";
+    $result = $conn->query($checkSql);
+    if ($result && $result->num_rows === 0) {
+        $conn->query("ALTER TABLE orders ADD COLUMN payment_method VARCHAR(20) NOT NULL DEFAULT 'COD' AFTER province");
+    }
+
+    $checked = true;
+}
+
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
 // Check if user is logged in
@@ -152,12 +167,20 @@ elseif ($action == 'update_cart') {
 }
 
 elseif ($action == 'create_order') {
+    ensure_order_payment_method_column($conn);
+
     $customer_name = isset($_POST['customer_name']) ? trim($_POST['customer_name']) : '';
     $customer_email = isset($_POST['customer_email']) ? trim($_POST['customer_email']) : '';
     $customer_phone = isset($_POST['customer_phone']) ? trim($_POST['customer_phone']) : '';
     $delivery_address = isset($_POST['delivery_address']) ? trim($_POST['delivery_address']) : '';
     $city = isset($_POST['city']) ? trim($_POST['city']) : '';
     $province = isset($_POST['province']) ? trim($_POST['province']) : '';
+    $payment_method = isset($_POST['payment_method']) ? strtoupper(trim($_POST['payment_method'])) : 'COD';
+
+    if (!in_array($payment_method, ['COD', 'GCASH'], true)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid payment method selected']);
+        exit;
+    }
     
     // Get cart items
     $cart_sql = "SELECT c.id, p.id as product_id, p.name, c.size, c.quantity, p.price_16oz, p.price_22oz 
@@ -187,10 +210,10 @@ elseif ($action == 'create_order') {
     }
     
     // Create order
-    $order_sql = "INSERT INTO orders (user_id, customer_name, customer_email, customer_phone, delivery_address, city, province, total_amount) 
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    $order_sql = "INSERT INTO orders (user_id, customer_name, customer_email, customer_phone, delivery_address, city, province, payment_method, total_amount) 
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $order_stmt = $conn->prepare($order_sql);
-    $order_stmt->bind_param("issssssd", $user_id, $customer_name, $customer_email, $customer_phone, $delivery_address, $city, $province, $total_amount);
+    $order_stmt->bind_param("isssssssd", $user_id, $customer_name, $customer_email, $customer_phone, $delivery_address, $city, $province, $payment_method, $total_amount);
     
     if ($order_stmt->execute()) {
         $order_id = $conn->insert_id;
