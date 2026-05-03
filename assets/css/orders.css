@@ -192,7 +192,7 @@
 .tracker-divider {
     flex: 0 0 30px;
     height: 3px;
-    background: #D6D0C4;
+    background: #D6D0C4 ;
     border-radius: 2px;
     transition: all 0.3s ease;
     margin: 0 0.5rem;
@@ -221,6 +221,17 @@
 
 .tracker-stage:has(.tracker-cancelled) {
     position: relative;
+}
+
+.tracker-cancelled-note {
+    margin-top: 1rem;
+    padding: 0.9rem 1rem;
+    background: rgba(26, 15, 10, 0.92);
+    color: #F5F1E8;
+    border-radius: 8px;
+    border-left: 3px solid var(--color-accent);
+    font-size: 0.9rem;
+    line-height: 1.5;
 }
 
 /* Order Items Section */

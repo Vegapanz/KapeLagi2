@@ -327,6 +327,11 @@
     text-align: center;
     margin-top: 1.5rem;
 }
+.auth-link-text a {
+    color: #E8E0D0;
+    text-decoration: none;
+    font-weight: 600;
+}
 
 .auth-link {
     color: #E8E0D0;

@@ -157,8 +157,11 @@ function update_order_status($conn) {
         exit;
     }
 
+    ensure_order_cancellation_reason_column($conn);
+
     $order_id = intval($_POST['order_id'] ?? 0);
     $status = trim($_POST['status'] ?? '');
+    $cancellation_note = trim($_POST['cancellation_note'] ?? '');
     $valid_statuses = ['pending', 'processing', 'completed', 'cancelled'];
 
     if ($order_id <= 0 || !in_array($status, $valid_statuses)) {
@@ -167,9 +170,30 @@ function update_order_status($conn) {
         exit;
     }
 
-    $sql = "UPDATE orders SET status = ? WHERE id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("si", $status, $order_id);
+    $note_value = null;
+    if ($status === 'cancelled') {
+        if ($cancellation_note === '') {
+            $noteSql = "SELECT cancellation_reason FROM orders WHERE id = ?";
+            $noteStmt = $conn->prepare($noteSql);
+            $noteStmt->bind_param("i", $order_id);
+            $noteStmt->execute();
+            $noteResult = $noteStmt->get_result();
+            $existing = $noteResult ? $noteResult->fetch_assoc() : null;
+            $note_value = $existing['cancellation_reason'] ?? null;
+        } else {
+            $note_value = $cancellation_note;
+        }
+    }
+
+    if ($status === 'cancelled') {
+        $sql = "UPDATE orders SET status = ?, cancellation_reason = ? WHERE id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ssi", $status, $note_value, $order_id);
+    } else {
+        $sql = "UPDATE orders SET status = ?, cancellation_reason = NULL WHERE id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("si", $status, $order_id);
+    }
 
     if ($stmt->execute()) {
         echo json_encode([

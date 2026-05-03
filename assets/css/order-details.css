@@ -443,6 +443,20 @@
     border-radius: 5px;
 }
 
+.cancellation-note-panel {
+    max-width: 1200px;
+    margin: 0 auto 2rem;
+    padding: 0 1.5rem;
+}
+
+.cancellation-note-content {
+    background: #E8E0D0;
+    border: 1px solid rgba(161, 124, 92, 0.35);
+    border-radius: 12px;
+    padding: 1.25rem;
+    color: #E8E0D0;
+}
+
 /* Footer Section */
 .details-footer {
     max-width: 1200px;

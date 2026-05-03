@@ -173,9 +173,15 @@ elseif ($action == 'create_order') {
     $customer_email = isset($_POST['customer_email']) ? trim($_POST['customer_email']) : '';
     $customer_phone = isset($_POST['customer_phone']) ? trim($_POST['customer_phone']) : '';
     $delivery_address = isset($_POST['delivery_address']) ? trim($_POST['delivery_address']) : '';
+    $address_2 = isset($_POST['address_2']) ? trim($_POST['address_2']) : '';
     $city = isset($_POST['city']) ? trim($_POST['city']) : '';
     $province = isset($_POST['province']) ? trim($_POST['province']) : '';
     $payment_method = isset($_POST['payment_method']) ? strtoupper(trim($_POST['payment_method'])) : 'COD';
+
+    $address_parts = array_filter([$delivery_address, $address_2], function ($part) {
+        return $part !== '';
+    });
+    $saved_address = implode(', ', $address_parts);
 
     if (!in_array($payment_method, ['COD', 'GCASH'], true)) {
         echo json_encode(['success' => false, 'message' => 'Invalid payment method selected']);
@@ -236,6 +242,24 @@ elseif ($action == 'create_order') {
         $clear_stmt = $conn->prepare($clear_sql);
         $clear_stmt->bind_param("i", $user_id);
         $clear_stmt->execute();
+
+        if ($saved_address !== '' && $city !== '') {
+            if ($province !== '') {
+                $profile_sql = "UPDATE users SET address = ?, city = ?, province = ?, updated_at = NOW() WHERE id = ?";
+                $profile_stmt = $conn->prepare($profile_sql);
+                if ($profile_stmt) {
+                    $profile_stmt->bind_param('sssi', $saved_address, $city, $province, $user_id);
+                    $profile_stmt->execute();
+                }
+            } else {
+                $profile_sql = "UPDATE users SET address = ?, city = ?, updated_at = NOW() WHERE id = ?";
+                $profile_stmt = $conn->prepare($profile_sql);
+                if ($profile_stmt) {
+                    $profile_stmt->bind_param('ssi', $saved_address, $city, $user_id);
+                    $profile_stmt->execute();
+                }
+            }
+        }
         
         echo json_encode(['success' => true, 'order_id' => $order_id, 'message' => 'Order created successfully']);
     } else {
