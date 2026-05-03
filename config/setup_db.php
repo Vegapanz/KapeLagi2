@@ -60,7 +60,10 @@ $sql_orders = "CREATE TABLE IF NOT EXISTS orders (
     payment_method VARCHAR(20) NOT NULL DEFAULT 'COD',
     total_amount DECIMAL(10, 2),
     status VARCHAR(20) DEFAULT 'pending',
+    is_archived TINYINT(1) NOT NULL DEFAULT 0,
+    archived_at DATETIME NULL,
     special_notes TEXT,
+    cancellation_reason TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

@@ -278,13 +278,13 @@ function profile_format_amount($amount)
                                 </div>
                             </div>
 
-                            <div class="info-row is-last">
+                            <!-- <div class="info-row is-last">
                                 <i class="fa-solid fa-map"></i>
                                 <div class="profile-field-wrap">
                                     <label class="info-label" for="profile-province">Province</label>
                                     <input class="profile-field-input" type="text" id="profile-province" name="province" value="<?php echo htmlspecialchars($display_province); ?>" placeholder="Not provided" disabled data-original="<?php echo htmlspecialchars($display_province); ?>">
                                 </div>
-                            </div>
+                            </div> -->
                         </div>
 
                         <div class="profile-form-actions">

@@ -2,6 +2,8 @@
 include 'config/session.php';
 include 'config/db.php';
 
+ensure_order_cancellation_reason_column($conn);
+
 // Redirect if not logged in
 if (!is_logged_in()) {
     header('Location: signin.php');
@@ -127,10 +129,15 @@ while ($row = $result->fetch_assoc()) {
                                             </div>
                                         </div>
 
-                                        <?php if ($status === 'cancelled'): ?>
+                                            <?php if ($status === 'cancelled'): ?>
                                             <div class="tracker-cancelled">
                                                 <i class="fas fa-exclamation-circle"></i> Order Cancelled
                                             </div>
+                                                <?php if (!empty($order['cancellation_reason'])): ?>
+                                                    <div class="tracker-cancelled-note">
+                                                        <?php echo nl2br(htmlspecialchars($order['cancellation_reason'])); ?>
+                                                    </div>
+                                                <?php endif; ?>
                                         <?php endif; ?>
                                     </div>
                                 </div>

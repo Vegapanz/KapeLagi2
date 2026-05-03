@@ -132,7 +132,7 @@ $verified_phone = $_SESSION['verified_phone'] ?? null;
                                     <option value="">Select City</option>
                                     <option value="Dasmariñas" <?php echo (isset($user['city']) && $user['city'] == 'Dasmariñas') ? 'selected' : ''; ?>>Dasmariñas</option>
                                     <option value="Silang">Silang</option>
-                                    <option value="Kawit">Kawit</option>
+                                    <option value="Imus">Imus</option>
                                 </select>
                             </div>
                         </div>

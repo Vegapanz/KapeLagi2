@@ -176,7 +176,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
                     </div>
 
                     <div class="contact-info-item">
-                        <a href="https://maps.app.goo.gl/c5i3SdpAe2mdn9D68" target="_blank"><i class="fas fa-map-marker-alt contact-icon"></i>
+                        <a href="https://maps.app.goo.gl/dDV1myo9u6x7BrKr5" target="_blank"><i class="fas fa-map-marker-alt contact-icon"></i>
                             <span class="contact-info-text">Area C, Dasmariñas Cavite</span></a>
                     </div>
                 </div>

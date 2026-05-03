@@ -31,9 +31,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Smooch+Sans:wght@300;400;500&display=swap" rel="stylesheet">
     
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="stylesheet" href="assets/css/auth.css">
+    <style>
+        .input-wrap-signin { position: relative; }
+        .password-toggle-signin {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 0;
+            background: transparent;
+            color: #6b4a3a;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0;
+        }
+        .auth-input.with-toggle-signin { padding-right: 50px; }
+    </style>
 </head>
 <body >
     <!-- Navigation Bar -->
@@ -60,15 +79,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <?php echo htmlspecialchars($error); ?>
                     </div>
                 <?php endif; ?>
+                <?php if (isset($_GET['reset']) && $_GET['reset'] == '1'): ?>
+                    <div class="alert alert-success" role="alert">Your password has been reset. Please sign in.</div>
+                <?php endif; ?>
                 
                 <form class="auth-form" method="POST" action="signin.php">
                     <label class="auth-label">Email:</label>
                     <input type="email" name="email" class="auth-input" placeholder="Your Email" required>
                     
                     <label class="auth-label">Password:</label>
-                    <input type="password" name="password" class="auth-input" placeholder="Password" required>
+                    <div class="input-wrap-signin">
+                        <input type="password" name="password" id="signinPassword" class="auth-input with-toggle-signin" placeholder="Password" required>
+                        <button type="button" class="password-toggle-signin" data-target="signinPassword" aria-label="Toggle password visibility">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
                     
-                    <a href="#" class="forgot-password">Forgot password?</a>
+                    <a href="forgot_password.php" class="forgot-password">Forgot password?</a>
                     
                     <button type="submit" class="auth-btn primary-btn">Sign in</button>
                 </form>
@@ -102,5 +129,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JavaScript -->
     <script src="assets/js/script.js"></script>
+    <script>
+        (function() {
+            const toggles = document.querySelectorAll('.password-toggle-signin');
+            toggles.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetId = button.getAttribute('data-target');
+                    const input = document.getElementById(targetId);
+                    if (!input) return;
+                    const isHidden = input.type === 'password';
+                    input.type = isHidden ? 'text' : 'password';
+                    const icon = button.querySelector('i');
+                    if (icon) {
+                        icon.className = isHidden ? 'fas fa-eye-slash' : 'fas fa-eye';
+                    }
+                });
+            });
+        })();
+    </script>
 </body>
 </html>

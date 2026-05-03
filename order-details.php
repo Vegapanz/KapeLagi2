@@ -2,6 +2,8 @@
 include 'config/session.php';
 include 'config/db.php';
 
+ensure_order_cancellation_reason_column($conn);
+
 // Redirect if not logged in
 if (!is_logged_in()) {
     header('Location: signin.php');
@@ -166,6 +168,17 @@ while ($item = $items_result->fetch_assoc()) {
                 </div>
             </div>
         </div>
+
+        <?php if ($status === 'cancelled'): ?>
+            <div class="cancellation-note-panel">
+                <div class="cancellation-note-content">
+                    <div class="tracker-title" style="margin-bottom: 0.75rem;">Cancellation Note</div>
+                    <div class="notes-content">
+                        <?php echo nl2br(htmlspecialchars($order['cancellation_reason'] ?? 'This order was cancelled by the store.')); ?>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <!-- Main Content -->
         <div class="details-content">
