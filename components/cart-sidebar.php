@@ -101,6 +101,12 @@
         document.getElementById('subtotal').textContent = parseFloat(totals.subtotal).toFixed(2) + '₱';
         document.getElementById('shipping').textContent = parseFloat(totals.shipping).toFixed(2) + '₱';
         document.getElementById('total').textContent = parseFloat(totals.total).toFixed(2) + '₱';
+        // Notify other UI parts (e.g., navbar) about cart count
+        try {
+            document.dispatchEvent(new CustomEvent('cartUpdated', { detail: { count: cartItems.length } }));
+        } catch (e) {
+            // ignore
+        }
     }
 
     function showEmptyCart() {
@@ -114,6 +120,12 @@
         document.getElementById('subtotal').textContent = '0.00₱';
         document.getElementById('shipping').textContent = '0.00₱';
         document.getElementById('total').textContent = '0.00₱';
+        // Notify other UI parts (e.g., navbar) that cart is empty
+        try {
+            document.dispatchEvent(new CustomEvent('cartUpdated', { detail: { count: 0 } }));
+        } catch (e) {
+            // ignore
+        }
     }
 
     function removeFromCart(cartId) {
@@ -200,5 +212,19 @@
                 openCart();
             });
         }
+    });
+    
+    // Dispatch an initial cartUpdated event after load to inform navbar of current count
+    document.addEventListener('DOMContentLoaded', function() {
+        fetch('api/cart.php?action=get_cart')
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.success && Array.isArray(data.cart)) {
+                    try { document.dispatchEvent(new CustomEvent('cartUpdated', { detail: { count: data.cart.length } })); } catch (e) {}
+                } else {
+                    try { document.dispatchEvent(new CustomEvent('cartUpdated', { detail: { count: 0 } })); } catch (e) {}
+                }
+            })
+            .catch(() => { try { document.dispatchEvent(new CustomEvent('cartUpdated', { detail: { count: 0 } })); } catch (e) {} });
     });
 </script>

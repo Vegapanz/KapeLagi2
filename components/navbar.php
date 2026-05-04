@@ -41,6 +41,7 @@ function is_page_active($page) {
                     <li class="nav-item ms-3">
                         <a class="nav-link cart-icon" href="checkout.php" title="Shopping Cart">
                             <i class="fas fa-shopping-cart"></i>
+                            <span id="cartCountBadge" class="cart-badge" style="display:none;font-size:0.75rem;line-height:1;margin-left:6px;padding:2px 6px;border-radius:12px;background:#dc3545;color:#fff;vertical-align:top;">0</span>
                         </a>
                     </li>
                     
@@ -66,3 +67,37 @@ function is_page_active($page) {
         </div>
     </div>
 </nav>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const badge = document.getElementById('cartCountBadge');
+
+        function updateBadge(count) {
+            if (!badge) return;
+            const n = parseInt(count, 10) || 0;
+            if (n > 0) {
+                badge.textContent = n;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        // Initial fetch to populate badge
+        fetch('api/cart.php?action=get_cart')
+            .then(r => r.json())
+            .then(data => {
+                if (data && data.success && Array.isArray(data.cart)) {
+                    updateBadge(data.cart.length);
+                } else {
+                    updateBadge(0);
+                }
+            })
+            .catch(() => updateBadge(0));
+
+        // Listen for cart updates from cart sidebar
+        document.addEventListener('cartUpdated', function(e) {
+            const cnt = e && e.detail && typeof e.detail.count === 'number' ? e.detail.count : 0;
+            updateBadge(cnt);
+        });
+    });
+</script>

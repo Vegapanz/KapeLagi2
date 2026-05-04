@@ -44,29 +44,31 @@ while ($item = $items_result->fetch_assoc()) {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order #<?php echo htmlspecialchars($order['id']); ?> - KapeLagi</title>
     <link rel="icon" type="image/png" href="assets/Images/favicon.png">
-    
+
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Smooch+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-    
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="stylesheet" href="assets/css/order-details.css">
 </head>
+
 <body>
     <!-- Navbar -->
     <?php include 'components/navbar.php'; ?>
-    
+
     <div class="order-details-container">
         <!-- Back Button -->
         <div class="details-back-button">
@@ -87,35 +89,38 @@ while ($item = $items_result->fetch_assoc()) {
             <div class="details-header-right">
                 <div class="details-status-badge">
                     <?php
-                        $status = $order['status'];
-                        $status_icon = '';
-                        $status_text = '';
-                        
-                        switch($status) {
-                            case 'pending':
-                                $status_icon = 'utensils';
-                                $status_text = 'Preparing';
-                                break;
-                            case 'processing':
-                                $status_icon = 'truck';
-                                $status_text = 'For Delivery';
-                                break;
-                            case 'completed':
-                                $status_icon = 'check-circle';
-                                $status_text = 'Delivered';
-                                break;
-                            case 'cancelled':
-                                $status_icon = 'times-circle';
-                                $status_text = 'Cancelled';
-                                break;
-                            default:
-                                $status_icon = 'clock';
-                                $status_text = ucfirst($status);
-                        }
+                    $status = $order['status'];
+                    $status_icon = '';
+                    $status_text = '';
+
+                    switch ($status) {
+                        case 'pending':
+                            $status_icon = 'utensils';
+                            $status_text = 'Preparing';
+                            break;
+                        case 'processing':
+                            $status_icon = 'truck';
+                            $status_text = 'For Delivery';
+                            break;
+                        case 'completed':
+                            $status_icon = 'check-circle';
+                            $status_text = 'Delivered';
+                            break;
+                        case 'cancelled':
+                            $status_icon = 'times-circle';
+                            $status_text = 'Cancelled';
+                            break;
+                        default:
+                            $status_icon = 'clock';
+                            $status_text = ucfirst($status);
+                    }
                     ?>
                     <i class="fas fa-<?php echo $status_icon; ?>"></i>
                     <span><?php echo $status_text; ?></span>
                 </div>
+                <?php if ($status !== 'completed' && $status !== 'cancelled'): ?>
+                    <button id="userCancelOrderBtn" class="btn btn-danger btn-sm user-cancel-btn">Cancel Order</button>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -124,10 +129,10 @@ while ($item = $items_result->fetch_assoc()) {
             <div class="tracker-title">Order Progress</div>
             <div class="order-tracker">
                 <?php
-                    $stages = ['pending' => 0, 'processing' => 1, 'completed' => 2];
-                    $current_stage = isset($stages[$status]) ? $stages[$status] : 0;
+                $stages = ['pending' => 0, 'processing' => 1, 'completed' => 2];
+                $current_stage = isset($stages[$status]) ? $stages[$status] : 0;
                 ?>
-                
+
                 <!-- Stage 1: Preparing -->
                 <div class="tracker-stage <?php echo ($current_stage >= 0) ? 'active' : ''; ?>">
                     <div class="stage-circle">
@@ -291,11 +296,105 @@ while ($item = $items_result->fetch_assoc()) {
             </a>
         </div>
     </div>
-    
+
+    <!-- Cancel Order Modal for Users -->
+    <div id="userCancelModal" class="cancel-order-overlay" aria-hidden="true">
+        <div class="cancel-order-dialog" role="dialog" aria-modal="true" aria-labelledby="userCancelTitle">
+            <div class="cancel-order-content">
+                <div class="cancel-order-header">
+                    <h5 id="userCancelTitle" class="cancel-order-title" style="color: #1A0F0A;">Cancel Order</h5>
+                    <button type="button" class="cancel-order-close" id="userCancelClose" aria-label="Close">&times;</button>
+                </div>
+                <div class="cancel-order-body">
+                    <p class="cancel-order-copy">Please tell us why you want to cancel this order. This note will be visible to the admin.</p>
+                    <label for="userCancelNote" class="cancel-order-label">Cancellation Note</label>
+                    <textarea id="userCancelNote" class="cancel-order-input" placeholder="Enter the reason for cancellation..."></textarea>
+                    <div id="userCancelNoteError" class="cancel-order-error">Please enter a cancellation note.</div>
+                </div>
+                <div class="cancel-order-footer">
+                    <button type="button" class="cancel-order-secondary" id="userCancelDismiss">Close</button>
+                    <button type="button" class="cancel-order-primary" id="userConfirmCancel">Submit Cancellation</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <?php include 'components/footer.php'; ?>
-    
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // User cancel flow
+        (function() {
+            const cancelBtn = document.getElementById('userCancelOrderBtn');
+            const modal = document.getElementById('userCancelModal');
+            const closeBtn = document.getElementById('userCancelClose');
+            const dismissBtn = document.getElementById('userCancelDismiss');
+            const confirmBtn = document.getElementById('userConfirmCancel');
+            const noteField = document.getElementById('userCancelNote');
+            const noteError = document.getElementById('userCancelNoteError');
+
+            if (!modal) return;
+
+            function openModal() {
+                modal.classList.add('is-open');
+                modal.setAttribute('aria-hidden', 'false');
+                setTimeout(() => noteField && noteField.focus(), 0);
+            }
+
+            function closeModal() {
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
+                if (noteField) noteField.value = '';
+                if (noteError) noteError.style.display = 'none';
+            }
+
+            if (cancelBtn) cancelBtn.addEventListener('click', openModal);
+            if (closeBtn) closeBtn.addEventListener('click', closeModal);
+            if (dismissBtn) dismissBtn.addEventListener('click', closeModal);
+
+            confirmBtn.addEventListener('click', function() {
+                const note = noteField.value.trim();
+                if (!note) {
+                    noteError.style.display = 'block';
+                    return;
+                }
+                noteError.style.display = 'none';
+
+                const fd = new FormData();
+                fd.append('order_id', '<?php echo $order_id; ?>');
+                fd.append('cancellation_note', note);
+
+                fetch('api/order.php?action=cancel_order', {
+                        method: 'POST',
+                        body: fd
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data && data.success) {
+                            // reload to show cancelled state and note
+                            location.reload();
+                        } else {
+                            alert('Failed to cancel order: ' + (data.message || 'Unknown error'));
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        alert('Network error while cancelling order');
+                    });
+            });
+
+            // close when clicking outside
+            modal.addEventListener('click', function(ev) {
+                if (ev.target === modal) closeModal();
+            });
+
+            document.addEventListener('keydown', function(ev) {
+                if (ev.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
+            });
+        })();
+    </script>
 </body>
+
 </html>

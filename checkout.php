@@ -26,6 +26,15 @@ $user_stmt->execute();
 $user_result = $user_stmt->get_result();
 $user = $user_result->fetch_assoc();
 
+$saved_full_address = trim((string) ($_SESSION['user_address'] ?? ($user['address'] ?? '')));
+$saved_block_lot = '';
+$saved_street_address = $saved_full_address;
+if ($saved_full_address !== '' && strpos($saved_full_address, ',') !== false) {
+    [$parsed_block_lot, $parsed_street_address] = array_map('trim', explode(',', $saved_full_address, 2));
+    $saved_block_lot = $parsed_block_lot;
+    $saved_street_address = $parsed_street_address;
+}
+
 // Check if phone is verified for this checkout session
 $phone_verified = isset($_SESSION['phone_verified']) && $_SESSION['phone_verified'] === true;
 $verified_phone = $_SESSION['verified_phone'] ?? null;
@@ -52,6 +61,10 @@ $verified_phone = $_SESSION['verified_phone'] ?? null;
     <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="stylesheet" href="assets/css/checkout.css">
     <link rel="stylesheet" href="assets/css/phone-verification.css">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <!-- Leaflet Routing Machine CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
 </head>
 
 <body>
@@ -75,6 +88,14 @@ $verified_phone = $_SESSION['verified_phone'] ?? null;
                             <div class="form-col">
                                 <label>Name</label>
                                 <input type="text" name="customer_name" class="form-input" value="<?php echo $user['name'] ?? ''; ?>" required>
+
+                        <!-- <div class="form-group">
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                                <input type="checkbox" id="useMapPin" style="width:auto;">
+                                Use pin on map instead of typing the full address
+                            </label>
+                            <small class="form-text text-muted">Leave this unchecked if you want to enter the address manually.</small>
+                        </div> -->
                             </div>
                             <div class="form-col">
                                 <label>Mobile Number</label>
@@ -103,39 +124,26 @@ $verified_phone = $_SESSION['verified_phone'] ?? null;
                                 <label>Email</label>
                                 <input type="email" name="customer_email" class="form-input" value="<?php echo $user['email'] ?? ''; ?>" required>
                             </div>
-                            <!-- <div class="form-col">
-                                <label>Province</label>
-                                <select name="province" class="form-input" required>
-                                    <option value="">Select Province</option>
-                                    <option value="Cavite" <?php echo (isset($user['province']) && $user['province'] == 'Cavite') ? 'selected' : ''; ?>>Cavite</option>
-                                    <option value="Metro Manila">Metro Manila</option>
-                                    <option value="Laguna">Laguna</option>
-                                    <option value="Rizal">Rizal</option>
-                                </select>
-                            </div> -->
                         </div>
 
                         <div class="form-group">
                             <label>Address 1</label>
-                            <input type="text" name="delivery_address" class="form-input" placeholder="Street, house no., etc." value="<?php echo $user['address'] ?? ''; ?>" required>
+                            <div style="display:flex;gap:10px;align-items:stretch;">
+                                <button type="button" id="openMapModalBtn" aria-label="Open map picker" style="width:52px;min-width:52px;border:1px solid #b18b63;background:#b18b63;color:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </button>
+                                <input id="delivery_address" type="text" name="delivery_address" class="form-input" placeholder="Street, house no., etc." value="<?php echo htmlspecialchars($saved_street_address); ?>" required>
+                            </div>
+                            <input type="hidden" id="lat" name="lat">
+                            <input type="hidden" id="lng" name="lng">
+                            <small class="form-text text-muted">Click the map pin icon to pick a location instead of typing the address.</small>
                         </div>
 
                         <div class="form-group">
-                            <label>Address 2 (optional)</label>
-                            <input type="text" name="address_2" class="form-input" placeholder="Barangay">
+                            <label>Block and Lot</label>
+                            <input type="text" name="address_2" class="form-input" placeholder="Street Number (blk,lot,phase, etc.)" value="<?php echo htmlspecialchars($saved_block_lot); ?>">
                         </div>
 
-                        <div class="form-row">
-                            <div class="form-col">
-                                <label>City</label>
-                                <select name="city" class="form-input" required>
-                                    <option value="">Select City</option>
-                                    <option value="Dasmariñas" <?php echo (isset($user['city']) && $user['city'] == 'Dasmariñas') ? 'selected' : ''; ?>>Dasmariñas</option>
-                                    <option value="Silang">Silang</option>
-                                    <option value="Imus">Imus</option>
-                                </select>
-                            </div>
-                        </div>
                     </form>
 
                     <h3 class="section-title mt-5">Payment Method</h3>
@@ -173,6 +181,8 @@ $verified_phone = $_SESSION['verified_phone'] ?? null;
                             <span>Shipping</span>
                             <span id="shipping">0.00₱</span>
                         </div>
+                        <input type="hidden" id="shipping_fee" name="shipping_fee" value="0">
+                        <input type="hidden" id="distance_km" name="distance_km" value="0">
 
                         <div class="summary-divider"></div>
 
@@ -187,6 +197,23 @@ $verified_phone = $_SESSION['verified_phone'] ?? null;
             </div>
         </div>
     </section>
+
+    <!-- Map Picker Modal -->
+    <div class="modal fade" id="mapPickerModal" tabindex="-1" aria-labelledby="mapPickerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="border-radius:18px;overflow:hidden;">
+                <div class="modal-header" style="border-bottom:1px solid rgba(0,0,0,.08);">
+                    <h5 class="modal-title" id="mapPickerModalLabel">Pick a delivery location</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="background:#f7f3ea;">
+                    <div id="map" style="height:420px;border:1px solid #ddd;border-radius:14px;margin-bottom:12px;"></div>
+                    <small id="mapAddress" class="form-text text-muted">Click the map to pick a location — address will appear here.</small>
+                    <small id="routeInfo" class="form-text text-muted d-block mt-2">Route distance will appear here after you choose a pin.</small>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <?php if (!$phone_verified): ?>
         <div id="phoneVerificationModal" class="phone-verification-modal" aria-hidden="true">
@@ -228,6 +255,213 @@ $verified_phone = $_SESSION['verified_phone'] ?? null;
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         window.checkoutPhoneVerified = <?php echo $phone_verified ? 'true' : 'false'; ?>;
+    </script>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet Routing Machine JS -->
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const mapEl = document.getElementById('map');
+            if (!mapEl) return;
+
+            const mapModalEl = document.getElementById('mapPickerModal');
+            const openMapModalBtn = document.getElementById('openMapModalBtn');
+            const mapModal = mapModalEl ? new bootstrap.Modal(mapModalEl) : null;
+
+            // Wider bounding box so the full Dasmariñas area stays visible
+            const dasmBounds = L.latLngBounds([14.24, 120.86], [14.40, 121.04]);
+
+            const map = L.map('map', {
+                maxBounds: dasmBounds,
+                maxBoundsViscosity: 1.0,
+                minZoom: 12,
+                maxZoom: 19,
+                zoomControl: true
+            }).fitBounds(dasmBounds);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            map.on('moveend', () => {
+                if (!dasmBounds.contains(map.getCenter())) map.panInsideBounds(dasmBounds);
+            });
+
+            function refreshMapSize() {
+                setTimeout(() => map.invalidateSize(), 50);
+            }
+
+            if (openMapModalBtn && mapModal) {
+                openMapModalBtn.addEventListener('click', function () {
+                    mapModal.show();
+                });
+            }
+
+            if (mapModalEl) {
+                mapModalEl.addEventListener('shown.bs.modal', function () {
+                    refreshMapSize();
+                });
+            }
+
+            let marker = null;
+            let storeMarker = null;
+            let routingControl = null;
+            const routeInfoEl = document.getElementById('routeInfo');
+
+            // Custom icons (colored markers)
+            const userIcon = L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+                shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+            const storeIcon = L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
+                shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+
+            // Address of the store to geocode and place on the map
+            const storeAddress = '5th Street, Santa Cristina 1, Bagong Bayan, Dasmariñas, Cavite, Calabarzon, 4115, Philippines';
+
+            // Geocode the store address using Nominatim and add a marker
+            (async function addStoreMarker() {
+                try {
+                    const searchUrl = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(storeAddress)}&limit=1`;
+                    const res = await fetch(searchUrl);
+                    const results = await res.json();
+                    if (results && results.length) {
+                        const s = results[0];
+                        const storeLatLng = L.latLng(parseFloat(s.lat), parseFloat(s.lon));
+                        storeMarker = L.marker(storeLatLng, { icon: storeIcon }).addTo(map);
+                        storeMarker.bindPopup(`<b>Store</b><br>${s.display_name}`);
+
+                        storeMarker.on('click', async function () {
+                            if (!marker) {
+                                if (routeInfoEl) routeInfoEl.textContent = 'Pick a location on the map first.';
+                                storeMarker.openPopup();
+                                return;
+                            }
+
+                            const from = marker.getLatLng();
+                            const to = storeLatLng;
+                            drawRoute(from, to);
+                        });
+                        // If the user already picked a pin, draw the route immediately
+                        if (marker) {
+                            try { drawRoute(marker.getLatLng(), storeLatLng); } catch (e) { console.warn(e); }
+                        }
+                    } else {
+                        if (routeInfoEl) routeInfoEl.textContent = 'Unable to locate store address.';
+                    }
+                } catch (err) {
+                    if (routeInfoEl) routeInfoEl.textContent = 'Error locating store address.';
+                }
+            })();
+            const mapAddressEl = document.getElementById('mapAddress');
+            const deliveryInput = document.getElementById('delivery_address');
+
+            async function reverseGeocode(latlng) {
+                if (!mapAddressEl) return;
+                mapAddressEl.textContent = 'Finding address...';
+                try {
+                    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(latlng.lat)}&lon=${encodeURIComponent(latlng.lng)}`;
+                    const res = await fetch(url, { method: 'GET' });
+                    if (!res.ok) throw new Error('Network response was not ok');
+                    const data = await res.json();
+                    const display = data.display_name || '';
+                    if (display) {
+                        if (deliveryInput) {
+                            deliveryInput.value = display;
+                            // Clear Block and Lot field since map provides the full address
+                            const address2Input = document.querySelector('input[name="address_2"]');
+                            if (address2Input) address2Input.value = '';
+                        }
+                        mapAddressEl.textContent = display;
+                    } else {
+                        mapAddressEl.textContent = 'Address not found';
+                    }
+                } catch (err) {
+                    mapAddressEl.textContent = 'Unable to fetch address';
+                }
+            }
+
+            function updateInputs(latlng) {
+                document.getElementById('lat').value = latlng.lat;
+                document.getElementById('lng').value = latlng.lng;
+                if (deliveryInput && mapAddressEl) reverseGeocode(latlng);
+            }
+
+            // Draw route between two points and show distance
+            function drawRoute(from, to) {
+                if (!from || !to) return;
+                if (routingControl) {
+                    try { map.removeControl(routingControl); } catch (e) { console.warn(e); }
+                    routingControl = null;
+                }
+
+                routingControl = L.Routing.control({
+                    waypoints: [from, to],
+                    router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1', profile: 'driving' }),
+                    fitSelectedRoutes: false,
+                    show: false,
+                    addWaypoints: false,
+                    lineOptions: { styles: [{ color: 'blue', weight: 5 }] },
+                    createMarker: function() { return null; }
+                }).addTo(map);
+
+                routingControl.on('routesfound', function (e) {
+                    const routes = e.routes;
+                    if (routes && routes.length) {
+                        const summary = routes[0].summary || {};
+                        const meters = summary.totalDistance ?? summary.total_distance ?? summary.distance ?? 0;
+                        const km = (meters / 1000).toFixed(2);
+                        if (window.KapeCheckout && typeof window.KapeCheckout.setShippingByDistance === 'function') {
+                            window.KapeCheckout.setShippingByDistance(km, meters);
+                        } else if (routeInfoEl) {
+                            routeInfoEl.textContent = `Distance: ${km} km (${Math.round(meters)} m)`;
+                        }
+                    } else {
+                        if (routeInfoEl) routeInfoEl.textContent = 'No route found.';
+                    }
+                });
+
+                routingControl.on('routingerror', function (e) {
+                    console.error('Routing error', e);
+                    if (routeInfoEl) routeInfoEl.textContent = 'Routing error';
+                    const shippingFeeInput = document.getElementById('shipping_fee');
+                    const distanceKmInput = document.getElementById('distance_km');
+                    if (shippingFeeInput) shippingFeeInput.value = '0';
+                    if (distanceKmInput) distanceKmInput.value = '0';
+                });
+            }
+
+            map.on('click', e => {
+                if (!dasmBounds.contains(e.latlng)) return;
+                if (!marker) {
+                    marker = L.marker(e.latlng, { draggable: true, icon: userIcon }).addTo(map);
+                    marker.on('dragend', ev => {
+                        const pos = ev.target.getLatLng();
+                        updateInputs(pos);
+                        // if store marker exists, redraw route
+                        if (storeMarker) drawRoute(pos, storeMarker.getLatLng());
+                    });
+                    // if store marker exists already, draw route immediately
+                    if (storeMarker) drawRoute(e.latlng, storeMarker.getLatLng());
+                } else {
+                    marker.setLatLng(e.latlng);
+                    // if store marker exists, redraw route
+                    if (storeMarker) drawRoute(e.latlng, storeMarker.getLatLng());
+                }
+                updateInputs(e.latlng);
+            });
+        });
     </script>
     <!-- Phone Verification JavaScript -->
     <script src="assets/js/phone-verification.js"></script>

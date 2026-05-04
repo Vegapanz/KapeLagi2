@@ -26,6 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_profile'])) {
     $name = trim($_POST['name'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
+    $block_lot = trim($_POST['block_lot'] ?? '');
     $address = trim($_POST['address'] ?? '');
     $city = trim($_POST['city'] ?? '');
     $province = trim($_POST['province'] ?? '');
@@ -69,20 +70,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_profile'])) {
             }
 
             if (!$email_changed) {
+                $merged_address_parts = array_filter([$block_lot, $address], function ($part) {
+                    return $part !== '';
+                });
+                $merged_address = implode(', ', $merged_address_parts);
+
                 $update_sql = "
                     UPDATE users
                     SET name = ?, phone = ?, address = ?, city = ?, province = ?, updated_at = NOW()
                     WHERE id = ?
                 ";
                 $update_stmt = $conn->prepare($update_sql);
-                $update_stmt->bind_param('sssssi', $name, $phone, $address, $city, $province, $user_id);
+                $update_stmt->bind_param('sssssi', $name, $phone, $merged_address, $city, $province, $user_id);
 
                 if ($update_stmt->execute()) {
                     $_SESSION['user_name'] = $name;
+                    $_SESSION['user_phone'] = $phone;
+                    $_SESSION['user_address'] = $merged_address;
+                    $_SESSION['user_city'] = $city;
+                    $_SESSION['user_province'] = $province;
 
                     $user['name'] = $name;
                     $user['phone'] = $phone;
-                    $user['address'] = $address;
+                    $user['address'] = $merged_address;
                     $user['city'] = $city;
                     $user['province'] = $province;
 
@@ -100,6 +110,13 @@ $display_email = $user['email'] ?? $user_email ?? '';
 $pending_email = $user['pending_email'] ?? '';
 $display_phone = $user['phone'] ?? '';
 $display_address = $user['address'] ?? '';
+$display_block_lot = '';
+$display_street_address = $display_address;
+if ($display_address !== '' && strpos($display_address, ',') !== false) {
+    [$parsed_block_lot, $parsed_street_address] = array_map('trim', explode(',', $display_address, 2));
+    $display_block_lot = $parsed_block_lot;
+    $display_street_address = $parsed_street_address;
+}
 $display_city = $user['city'] ?? '';
 $display_province = $user['province'] ?? '';
 $member_since = !empty($user['created_at']) ? date('F Y', strtotime($user['created_at'])) : 'Member';
@@ -265,18 +282,26 @@ function profile_format_amount($amount)
                             <div class="info-row">
                                 <i class="fa-solid fa-location-dot"></i>
                                 <div class="profile-field-wrap">
-                                    <label class="info-label" for="profile-address">Address</label>
-                                    <input class="profile-field-input" type="text" id="profile-address" name="address" value="<?php echo htmlspecialchars($display_address); ?>" placeholder="Not provided" disabled data-original="<?php echo htmlspecialchars($display_address); ?>">
+                                    <label class="info-label" for="profile-block-lot">Street Number</label>
+                                    <input class="profile-field-input" type="text" id="profile-block-lot" name="block_lot" value="<?php echo htmlspecialchars($display_block_lot); ?>" placeholder="Not provided" disabled data-original="<?php echo htmlspecialchars($display_block_lot); ?>">
                                 </div>
                             </div>
 
                             <div class="info-row">
+                                <i class="fa-solid fa-location-dot"></i>
+                                <div class="profile-field-wrap">
+                                    <label class="info-label" for="profile-address">Street Address</label>
+                                    <input class="profile-field-input" type="text" id="profile-address" name="address" value="<?php echo htmlspecialchars($display_street_address); ?>" placeholder="Not provided" disabled data-original="<?php echo htmlspecialchars($display_street_address); ?>">
+                                </div>
+                            </div>
+
+                            <!-- <div class="info-row">
                                 <i class="fa-solid fa-city"></i>
                                 <div class="profile-field-wrap">
                                     <label class="info-label" for="profile-city">City</label>
                                     <input class="profile-field-input" type="text" id="profile-city" name="city" value="<?php echo htmlspecialchars($display_city); ?>" placeholder="Not provided" disabled data-original="<?php echo htmlspecialchars($display_city); ?>">
                                 </div>
-                            </div>
+                            </div> -->
 
                             <!-- <div class="info-row is-last">
                                 <i class="fa-solid fa-map"></i>

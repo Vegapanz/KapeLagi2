@@ -78,6 +78,7 @@ function normalizeProductRow($row, $catalogItem = null)
 {
     $price16 = isset($row['price_16oz']) ? (float)$row['price_16oz'] : (float)($catalogItem['price_16oz'] ?? 0);
     $price22 = isset($row['price_22oz']) ? (float)$row['price_22oz'] : (float)($catalogItem['price_22oz'] ?? 0);
+    $stock = isset($row['stock']) ? (int)$row['stock'] : 0;
 
     if ($price22 <= $price16) {
         $price22 = $price16 + 20;
@@ -88,6 +89,7 @@ function normalizeProductRow($row, $catalogItem = null)
     $row['image_path'] = getMenuImagePath($row['name'], $row['image_url'] ?? ($catalogItem['image'] ?? ''));
     $row['description'] = $row['description'] ?? ($catalogItem['description'] ?? '');
     $row['category'] = $row['category'] ?? ($catalogItem['category'] ?? 'Coffee');
+    $row['stock'] = $stock;
 
     return $row;
 }
@@ -118,6 +120,7 @@ function buildMenuProducts($dbRows)
                 'price_22oz_effective' => number_format($catalogItem['price_22oz'], 2, '.', ''),
                 'price_16oz' => $catalogItem['price_16oz'],
                 'price_22oz' => $catalogItem['price_22oz'],
+                'stock' => 0,
                 'missing_from_db' => true,
             ];
         }
@@ -175,7 +178,7 @@ function updateMenuCategoryAssignments($conn)
 // Get all products
 syncMenuCatalogToDatabase($conn);
 updateMenuCategoryAssignments($conn);
-$sql = "SELECT * FROM products ORDER BY FIELD(category, 'Coffee', 'Non-Coffee', 'Fruity'), name";
+$sql = "SELECT * FROM products WHERE (is_archived = 0 OR is_archived IS NULL) ORDER BY FIELD(category, 'Coffee', 'Non-Coffee', 'Fruity'), name";
 $result = $conn->query($sql);
 $dbProducts = [];
 while ($row = $result->fetch_assoc()) {
@@ -248,12 +251,18 @@ $categories = ['Coffee', 'Non-Coffee', 'Fruity'];
                             data-product-missing="<?php echo !empty($product['missing_from_db']) ? '1' : '0'; ?>"
                             data-price-16oz="<?php echo htmlspecialchars($product['price_16oz_effective']); ?>"
                             data-price-22oz="<?php echo htmlspecialchars($product['price_22oz_effective']); ?>"
+                            data-stock="<?php echo isset($product['stock']) ? (int)$product['stock'] : 0; ?>"
                             role="button"
                             tabindex="0"
                             <?php echo empty($product['id']) ? 'aria-disabled="true"' : ''; ?>
                             aria-label="View <?php echo htmlspecialchars($product['name']); ?> details">
                             <div class="product-image">
                                 <img src="<?php echo htmlspecialchars($product['image_path']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>">
+                                <?php if (isset($product['stock']) && $product['stock'] == 0): ?>
+                                    <div class="out-of-stock-overlay">
+                                        <span class="out-of-stock-label">OUT OF STOCK</span>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                             <div class="product-info">
                                 <h3 class="product-name"><?php echo $product['name']; ?></h3>
@@ -282,6 +291,13 @@ $categories = ['Coffee', 'Non-Coffee', 'Fruity'];
                         <div class="product-detail-info">
                             <h2 id="modalProductName"></h2>
                             <p id="modalProductDesc" class="product-description"></p>
+
+                            <div id="stockWarning" style="display: none;">
+                                <div class="alert alert-danger d-flex align-items-center gap-2">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    <span>This item is currently <strong>OUT OF STOCK</strong></span>
+                                </div>
+                            </div>
 
                             <div class="size-selector">
                                 <label>Size:</label>
