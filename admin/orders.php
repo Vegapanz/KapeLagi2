@@ -55,7 +55,8 @@ if ($search_query !== '') {
         "o.customer_name LIKE '%{$escaped_search}%'",
         "o.customer_email LIKE '%{$escaped_search}%'",
         "CAST(o.id AS CHAR) LIKE '%{$escaped_search}%'",
-        "p.name LIKE '%{$escaped_search}%'"];
+        "p.name LIKE '%{$escaped_search}%'"
+    ];
     $where_parts[] = '(' . implode(' OR ', $search_parts) . ')';
 }
 
@@ -102,13 +103,13 @@ $cancelled = $conn->query("SELECT COUNT(*) as count FROM orders WHERE $count_sco
 
 <div class="d-flex flex-wrap gap-2 mb-3">
     <a href="?scope=active&status=<?php echo urlencode($status_filter); ?>&search=<?php echo urlencode($search_query); ?>&per_page=<?php echo $orders_per_page; ?>&page=1"
-       class="btn <?php echo $scope === 'active' ? '' : 'btn-outline-dark'; ?>"
-       style="<?php echo $scope === 'active' ? 'background-color: #1A0F0A; color: #E8E0D0; border: none;' : 'border-color: #1A0F0A; color: #1A0F0A;'; ?>">
+        class="btn <?php echo $scope === 'active' ? '' : 'btn-outline-dark'; ?>"
+        style="<?php echo $scope === 'active' ? 'background-color: #1A0F0A; color: #E8E0D0; border: none;' : 'border-color: #1A0F0A; color: #1A0F0A;'; ?>">
         Active Orders (<?php echo $active_orders_total; ?>)
     </a>
     <a href="?scope=archived&status=<?php echo urlencode($status_filter); ?>&search=<?php echo urlencode($search_query); ?>&per_page=<?php echo $orders_per_page; ?>&page=1"
-       class="btn <?php echo $scope === 'archived' ? '' : 'btn-outline-dark'; ?>"
-       style="<?php echo $scope === 'archived' ? 'background-color: #6d4c41; color: #fff; border: none;' : 'border-color: #6d4c41; color: #6d4c41;'; ?>">
+        class="btn <?php echo $scope === 'archived' ? '' : 'btn-outline-dark'; ?>"
+        style="<?php echo $scope === 'archived' ? 'background-color: #6d4c41; color: #fff; border: none;' : 'border-color: #6d4c41; color: #6d4c41;'; ?>">
         Archived Orders (<?php echo $archived_orders_total; ?>)
     </a>
 </div>
@@ -184,7 +185,7 @@ $cancelled = $conn->query("SELECT COUNT(*) as count FROM orders WHERE $count_sco
                     if ($order['status'] === 'completed') $status_class = 'completed';
                     if ($order['status'] === 'processing') $status_class = 'processing';
                     if ($order['status'] === 'cancelled') $status_class = 'cancelled';
-                    
+
                     echo '<tr>
                             <td><strong>#' . htmlspecialchars($order['id']) . '</strong></td>
                             <td>' . htmlspecialchars($order['customer_name']) . '</td>
@@ -258,270 +259,277 @@ $cancelled = $conn->query("SELECT COUNT(*) as count FROM orders WHERE $count_sco
 </div>
 
 <style>
-.cancel-order-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 4000;
-    background: rgba(0, 0, 0, 0.5);
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-}
+    .cancel-order-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 4000;
+        background: rgba(0, 0, 0, 0.5);
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+    }
 
-.cancel-order-overlay.is-open {
-    display: flex;
-}
+    .cancel-order-overlay.is-open {
+        display: flex;
+    }
 
-.cancel-order-dialog {
-    width: min(100%, 560px);
-}
+    .cancel-order-dialog {
+        width: min(100%, 560px);
+    }
 
-.cancel-order-content {
-    background: #E8E0D0;
-    border: 1px solid rgba(161, 124, 92, 0.35);
-    border-radius: 12px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
-    overflow: hidden;
-}
+    .cancel-order-content {
+        background: #E8E0D0;
+        border: 1px solid rgba(161, 124, 92, 0.35);
+        border-radius: 12px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+        overflow: hidden;
+    }
 
-.cancel-order-header,
-.cancel-order-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 20px 24px;
-}
+    .cancel-order-header,
+    .cancel-order-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 20px 24px;
+    }
 
-.cancel-order-header {
-    border-bottom: 1px solid rgba(161, 124, 92, 0.2);
-}
+    .cancel-order-header {
+        border-bottom: 1px solid rgba(161, 124, 92, 0.2);
+    }
 
-.cancel-order-footer {
-    border-top: 1px solid rgba(161, 124, 92, 0.2);
-    justify-content: flex-end;
-}
+    .cancel-order-footer {
+        border-top: 1px solid rgba(161, 124, 92, 0.2);
+        justify-content: flex-end;
+    }
 
-.cancel-order-title {
-    margin: 0;
-    font-family: Anton, sans-serif;
-    letter-spacing: 0.5px;
-}
+    .cancel-order-title {
+        margin: 0;
+        font-family: Anton, sans-serif;
+        letter-spacing: 0.5px;
+        color: #1A0F0A;
+    }
 
-.cancel-order-close {
-    border: 0;
-    background: transparent;
-    font-size: 2rem;
-    line-height: 1;
-    color: #1A0F0A;
-    cursor: pointer;
-}
+    .cancel-order-close {
+        border: 0;
+        background: transparent;
+        font-size: 2rem;
+        line-height: 1;
+        color: #1A0F0A;
+        cursor: pointer;
+    }
 
-.cancel-order-body {
-    padding: 20px 24px;
-}
+    .cancel-order-body {
+        padding: 20px 24px;
+    }
 
-.cancel-order-copy {
-    margin-bottom: 14px;
-    color: #1A0F0A;
-}
+    .cancel-order-copy {
+        margin-bottom: 14px;
+        color: #1A0F0A;
+    }
 
-.cancel-order-label {
-    display: block;
-    margin-bottom: 8px;
-    color: #1A0F0A;
-    font-weight: 600;
-}
+    .cancel-order-label {
+        display: block;
+        margin-bottom: 8px;
+        color: #1A0F0A;
+        font-weight: 600;
+    }
 
-.cancel-order-input {
-    width: 100%;
-    min-height: 120px;
-    resize: vertical;
-    border: 1px solid #e0d9cd;
-    border-radius: 8px;
-    padding: 12px;
-    font: inherit;
-    background: #fff;
-    color: #1A0F0A;
-}
+    .cancel-order-input {
+        width: 100%;
+        min-height: 120px;
+        resize: vertical;
+        border: 1px solid #e0d9cd;
+        border-radius: 8px;
+        padding: 12px;
+        font: inherit;
+        background: #fff;
+        color: #1A0F0A;
+    }
 
-.cancel-order-input:focus {
-    outline: none;
-    border-color: #A17C5C;
-    box-shadow: 0 0 0 3px rgba(161, 124, 92, 0.12);
-}
+    .cancel-order-input:focus {
+        outline: none;
+        border-color: #A17C5C;
+        box-shadow: 0 0 0 3px rgba(161, 124, 92, 0.12);
+    }
 
-.cancel-order-error {
-    display: none;
-    margin-top: 10px;
-    color: #b42318;
-}
+    .cancel-order-error {
+        display: none;
+        margin-top: 10px;
+        color: #b42318;
+    }
 
-.cancel-order-secondary,
-.cancel-order-primary {
-    border: 0;
-    border-radius: 8px;
-    padding: 10px 18px;
-    cursor: pointer;
-    font-family: inherit;
-}
+    .cancel-order-secondary,
+    .cancel-order-primary {
+        border: 0;
+        border-radius: 8px;
+        padding: 10px 18px;
+        cursor: pointer;
+        font-family: inherit;
+    }
 
-.cancel-order-secondary {
-    background: #6c757d;
-    color: #fff;
-}
+    .cancel-order-secondary {
+        background: #6c757d;
+        color: #fff;
+    }
 
-.cancel-order-primary {
-    background: #1A0F0A;
-    color: #E8E0D0;
-    margin-left: 10px;
-}
+    .cancel-order-primary {
+        background: #1A0F0A;
+        color: #E8E0D0;
+        margin-left: 10px;
+    }
 </style>
 
 <script>
-// Update Order Status
-const cancelOrderModal = document.getElementById('cancelOrderModal');
-const cancelOrderNote = document.getElementById('cancelOrderNote');
-const cancelOrderNoteError = document.getElementById('cancelOrderNoteError');
-const confirmCancelOrderBtn = document.getElementById('confirmCancelOrderBtn');
-const cancelOrderCloseBtn = document.getElementById('cancelOrderCloseBtn');
-const cancelOrderDismissBtn = document.getElementById('cancelOrderDismissBtn');
-let pendingCancelContext = null;
+    // Update Order Status
+    const cancelOrderModal = document.getElementById('cancelOrderModal');
+    const cancelOrderNote = document.getElementById('cancelOrderNote');
+    const cancelOrderNoteError = document.getElementById('cancelOrderNoteError');
+    const confirmCancelOrderBtn = document.getElementById('confirmCancelOrderBtn');
+    const cancelOrderCloseBtn = document.getElementById('cancelOrderCloseBtn');
+    const cancelOrderDismissBtn = document.getElementById('cancelOrderDismissBtn');
+    let pendingCancelContext = null;
 
-function openCancelOrderModal() {
-    cancelOrderModal.classList.add('is-open');
-    cancelOrderModal.setAttribute('aria-hidden', 'false');
-    setTimeout(() => {
-        cancelOrderNote.focus();
-    }, 0);
-}
-
-function closeCancelOrderModal() {
-    cancelOrderModal.classList.remove('is-open');
-    cancelOrderModal.setAttribute('aria-hidden', 'true');
-    cancelOrderNote.value = '';
-    cancelOrderNoteError.style.display = 'none';
-}
-
-function updateOrderStatus(orderId, status, selectElement, cancellationNote = '') {
-    const formData = new FormData();
-    formData.append('order_id', orderId);
-    formData.append('status', status);
-
-    if (status === 'cancelled') {
-        formData.append('cancellation_note', cancellationNote.trim());
+    function openCancelOrderModal() {
+        cancelOrderModal.classList.add('is-open');
+        cancelOrderModal.setAttribute('aria-hidden', 'false');
+        setTimeout(() => {
+            cancelOrderNote.focus();
+        }, 0);
     }
 
-    fetch('api.php?action=update-order-status', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Flash effect to show change
-            const row = selectElement ? selectElement.closest('tr') : null;
-            if (selectElement) {
-                selectElement.setAttribute('data-previous-status', status);
-            }
-            if (row) {
-                row.style.backgroundColor = '#ffffcc';
-                setTimeout(() => {
-                    row.style.backgroundColor = '';
-                }, 1000);
-            }
-        } else {
-            alert('Error: ' + (data.error || 'Failed to update status'));
-            if (selectElement) {
-                selectElement.value = selectElement.getAttribute('data-previous-status') || 'pending';
-            }
-            location.reload();
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error updating order status');
-        if (selectElement) {
-            selectElement.value = selectElement.getAttribute('data-previous-status') || 'pending';
-        }
-        location.reload();
-    });
-}
-
-function handleOrderStatusChange(selectElement, orderId) {
-    const previousStatus = selectElement.getAttribute('data-previous-status') || selectElement.value;
-    const newStatus = selectElement.value;
-
-    if (newStatus === 'cancelled') {
-        pendingCancelContext = { orderId, selectElement };
-        openCancelOrderModal();
-        return;
+    function closeCancelOrderModal() {
+        cancelOrderModal.classList.remove('is-open');
+        cancelOrderModal.setAttribute('aria-hidden', 'true');
+        cancelOrderNote.value = '';
+        cancelOrderNoteError.style.display = 'none';
     }
 
-    updateOrderStatus(orderId, newStatus, selectElement);
-}
+    function updateOrderStatus(orderId, status, selectElement, cancellationNote = '') {
+        const formData = new FormData();
+        formData.append('order_id', orderId);
+        formData.append('status', status);
 
-document.querySelectorAll('select.form-select.form-select-sm').forEach(selectElement => {
-    selectElement.setAttribute('data-previous-status', selectElement.value);
-    selectElement.addEventListener('focus', () => {
+        if (status === 'cancelled') {
+            formData.append('cancellation_note', cancellationNote.trim());
+        }
+
+        fetch('api.php?action=update-order-status', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Flash effect to show change
+                    const row = selectElement ? selectElement.closest('tr') : null;
+                    if (selectElement) {
+                        selectElement.setAttribute('data-previous-status', status);
+                    }
+                    if (row) {
+                        row.style.backgroundColor = '#ffffcc';
+                        setTimeout(() => {
+                            row.style.backgroundColor = '';
+                        }, 1000);
+                    }
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to update status'));
+                    if (selectElement) {
+                        selectElement.value = selectElement.getAttribute('data-previous-status') || 'pending';
+                    }
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating order status');
+                if (selectElement) {
+                    selectElement.value = selectElement.getAttribute('data-previous-status') || 'pending';
+                }
+                location.reload();
+            });
+    }
+
+    function handleOrderStatusChange(selectElement, orderId) {
+        const previousStatus = selectElement.getAttribute('data-previous-status') || selectElement.value;
+        const newStatus = selectElement.value;
+
+        if (newStatus === 'cancelled') {
+            pendingCancelContext = {
+                orderId,
+                selectElement
+            };
+            openCancelOrderModal();
+            return;
+        }
+
+        updateOrderStatus(orderId, newStatus, selectElement);
+    }
+
+    document.querySelectorAll('select.form-select.form-select-sm').forEach(selectElement => {
         selectElement.setAttribute('data-previous-status', selectElement.value);
+        selectElement.addEventListener('focus', () => {
+            selectElement.setAttribute('data-previous-status', selectElement.value);
+        });
     });
-});
 
-confirmCancelOrderBtn.addEventListener('click', () => {
-    if (!pendingCancelContext) {
-        return;
-    }
+    confirmCancelOrderBtn.addEventListener('click', () => {
+        if (!pendingCancelContext) {
+            return;
+        }
 
-    const note = cancelOrderNote.value.trim();
-    if (!note) {
-        cancelOrderNoteError.style.display = 'block';
-        return;
-    }
+        const note = cancelOrderNote.value.trim();
+        if (!note) {
+            cancelOrderNoteError.style.display = 'block';
+            return;
+        }
 
-    cancelOrderNoteError.style.display = 'none';
-    const { orderId, selectElement } = pendingCancelContext;
-    updateOrderStatus(orderId, 'cancelled', selectElement, note);
-    pendingCancelContext = null;
-    closeCancelOrderModal();
-});
-
-cancelOrderCloseBtn.addEventListener('click', () => {
-    if (pendingCancelContext) {
-        pendingCancelContext.selectElement.value = pendingCancelContext.selectElement.getAttribute('data-previous-status') || 'pending';
+        cancelOrderNoteError.style.display = 'none';
+        const {
+            orderId,
+            selectElement
+        } = pendingCancelContext;
+        updateOrderStatus(orderId, 'cancelled', selectElement, note);
         pendingCancelContext = null;
-    }
-    closeCancelOrderModal();
-});
+        closeCancelOrderModal();
+    });
 
-cancelOrderDismissBtn.addEventListener('click', () => {
-    if (pendingCancelContext) {
-        pendingCancelContext.selectElement.value = pendingCancelContext.selectElement.getAttribute('data-previous-status') || 'pending';
-        pendingCancelContext = null;
-    }
-    closeCancelOrderModal();
-});
-
-cancelOrderModal.addEventListener('click', (event) => {
-    if (event.target === cancelOrderModal) {
+    cancelOrderCloseBtn.addEventListener('click', () => {
         if (pendingCancelContext) {
             pendingCancelContext.selectElement.value = pendingCancelContext.selectElement.getAttribute('data-previous-status') || 'pending';
             pendingCancelContext = null;
         }
         closeCancelOrderModal();
-    }
-});
+    });
 
-document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && cancelOrderModal.classList.contains('is-open')) {
+    cancelOrderDismissBtn.addEventListener('click', () => {
         if (pendingCancelContext) {
             pendingCancelContext.selectElement.value = pendingCancelContext.selectElement.getAttribute('data-previous-status') || 'pending';
             pendingCancelContext = null;
         }
         closeCancelOrderModal();
-    }
-});
+    });
+
+    cancelOrderModal.addEventListener('click', (event) => {
+        if (event.target === cancelOrderModal) {
+            if (pendingCancelContext) {
+                pendingCancelContext.selectElement.value = pendingCancelContext.selectElement.getAttribute('data-previous-status') || 'pending';
+                pendingCancelContext = null;
+            }
+            closeCancelOrderModal();
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && cancelOrderModal.classList.contains('is-open')) {
+            if (pendingCancelContext) {
+                pendingCancelContext.selectElement.value = pendingCancelContext.selectElement.getAttribute('data-previous-status') || 'pending';
+                pendingCancelContext = null;
+            }
+            closeCancelOrderModal();
+        }
+    });
 </script>
 
 <?php include 'includes/footer.php'; ?>

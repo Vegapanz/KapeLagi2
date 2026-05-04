@@ -7,6 +7,59 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('cartItems').addEventListener('click', handleCartAction);
 });
 
+const checkoutState = {
+    subtotal: 0,
+    shipping: 0,
+    distanceKm: 0
+};
+
+function formatPeso(value) {
+    return '₱' + parseFloat(value || 0).toFixed(2);
+}
+
+function updateTotalsUI() {
+    const subtotalEl = document.getElementById('subtotal');
+    const shippingEl = document.getElementById('shipping');
+    const totalEl = document.getElementById('total');
+
+    if (subtotalEl) subtotalEl.textContent = formatPeso(checkoutState.subtotal);
+    if (shippingEl) shippingEl.textContent = formatPeso(checkoutState.shipping);
+    if (totalEl) totalEl.textContent = formatPeso(checkoutState.subtotal + checkoutState.shipping);
+}
+
+function setShippingByDistance(distanceKm, distanceMeters) {
+    const km = Math.max(0, parseFloat(distanceKm || 0));
+    const roundedKm = Math.ceil(km);
+    let shipping = 0;
+
+    if (km <= 0) {
+        shipping = 0;
+    } else {
+        // Philippine-style local delivery rate:
+        // base fee covers the first 2 km, then add 5 pesos per extra km.
+        shipping = km <= 2 ? 49 : 49 + ((roundedKm - 2) * 5);
+    }
+
+    checkoutState.shipping = shipping;
+    checkoutState.distanceKm = km;
+
+    const shippingFeeInput = document.getElementById('shipping_fee');
+    const distanceKmInput = document.getElementById('distance_km');
+    if (shippingFeeInput) shippingFeeInput.value = shipping.toFixed(2);
+    if (distanceKmInput) distanceKmInput.value = km.toFixed(2);
+
+    updateTotalsUI();
+
+    const routeInfoEl = document.getElementById('routeInfo');
+    if (routeInfoEl && km > 0) {
+        const metersText = typeof distanceMeters === 'number' && distanceMeters > 0 ? ` (${Math.round(distanceMeters)} m)` : '';
+        routeInfoEl.textContent = `Distance: ${km.toFixed(2)} km${metersText} | Shipping: ${formatPeso(shipping)}`;
+    }
+}
+
+window.KapeCheckout = window.KapeCheckout || {};
+window.KapeCheckout.setShippingByDistance = setShippingByDistance;
+
 function loadCart() {
     fetch('api/cart.php?action=get_cart')
         .then(response => response.json())
@@ -25,11 +78,9 @@ function loadCart() {
 
 function displayCart(data) {
     const cartItemsContainer = document.getElementById('cartItems');
-    const subtotalEl = document.getElementById('subtotal');
-    const shippingEl = document.getElementById('shipping');
-    const totalEl = document.getElementById('total');
     const cartItems = Array.isArray(data.cart) ? data.cart : [];
     const totals = data.totals || { subtotal: 0, shipping: 0, total: 0 };
+    const routeShippingSelected = checkoutState.distanceKm > 0 || checkoutState.shipping > 0;
     
     // Clear previous items
     cartItemsContainer.innerHTML = '';
@@ -80,9 +131,17 @@ function displayCart(data) {
     });
     
     // Update totals
-    subtotalEl.textContent = parseFloat(totals.subtotal || 0).toFixed(2) + '₱';
-    shippingEl.textContent = parseFloat(totals.shipping || 0).toFixed(2) + '₱';
-    totalEl.textContent = parseFloat(totals.total || 0).toFixed(2) + '₱';
+    checkoutState.subtotal = parseFloat(totals.subtotal || 0);
+    if (!routeShippingSelected) {
+        checkoutState.shipping = parseFloat(totals.shipping || 0);
+        checkoutState.distanceKm = 0;
+    }
+    updateTotalsUI();
+
+    const shippingFeeInput = document.getElementById('shipping_fee');
+    const distanceKmInput = document.getElementById('distance_km');
+    if (shippingFeeInput) shippingFeeInput.value = checkoutState.shipping.toFixed(2);
+    if (distanceKmInput) distanceKmInput.value = checkoutState.distanceKm.toFixed(2);
 
     // Add event listeners for quantity inputs
     const quantityInputs = cartItemsContainer.querySelectorAll('.cart-qty-input');
@@ -115,14 +174,12 @@ function displayCart(data) {
 
 function displayEmptyCart() {
     const cartItemsContainer = document.getElementById('cartItems');
-    const subtotalEl = document.getElementById('subtotal');
-    const shippingEl = document.getElementById('shipping');
-    const totalEl = document.getElementById('total');
 
     cartItemsContainer.innerHTML = '<p class="cart-item-info">Your cart is empty.</p>';
-    subtotalEl.textContent = '0.00 ₱';
-    shippingEl.textContent = '0.00 ₱';
-    totalEl.textContent = '0.00 ₱';
+    checkoutState.subtotal = 0;
+    checkoutState.shipping = 0;
+    checkoutState.distanceKm = 0;
+    updateTotalsUI();
 }
 
 function handleCartAction(event) {
@@ -248,14 +305,6 @@ function submitOrder() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            if (data.payment_redirect_url) {
-                window.KapeNotify.popup('Redirecting to GCash', 'Please complete your payment in PayMongo.', 'info')
-                    .then(function () {
-                        window.location.href = data.payment_redirect_url;
-                    });
-                return;
-            }
-
             window.KapeNotify.popup('Order Placed', 'Order placed successfully! Order ID: ' + data.order_id, 'success')
                 .then(function () {
                     window.location.href = 'index.php';

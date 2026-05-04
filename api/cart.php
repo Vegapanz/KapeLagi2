@@ -174,11 +174,12 @@ elseif ($action == 'create_order') {
     $customer_phone = isset($_POST['customer_phone']) ? trim($_POST['customer_phone']) : '';
     $delivery_address = isset($_POST['delivery_address']) ? trim($_POST['delivery_address']) : '';
     $address_2 = isset($_POST['address_2']) ? trim($_POST['address_2']) : '';
-    $city = isset($_POST['city']) ? trim($_POST['city']) : '';
-    $province = isset($_POST['province']) ? trim($_POST['province']) : '';
+    $city = isset($_POST['city']) ? trim($_POST['city']) : 'Dasmariñas';
+    $province = isset($_POST['province']) ? trim($_POST['province']) : 'Cavite';
     $payment_method = isset($_POST['payment_method']) ? strtoupper(trim($_POST['payment_method'])) : 'COD';
+    $shipping_fee = isset($_POST['shipping_fee']) ? (float)$_POST['shipping_fee'] : 0.0;
 
-    $address_parts = array_filter([$delivery_address, $address_2], function ($part) {
+    $address_parts = array_filter([$address_2, $delivery_address], function ($part) {
         return $part !== '';
     });
     $saved_address = implode(', ', $address_parts);
@@ -214,6 +215,16 @@ elseif ($action == 'create_order') {
         $total_amount += $price * $item['quantity'];
         $cart_items[] = $item;
     }
+
+    if ($shipping_fee < 0) {
+        $shipping_fee = 0;
+    }
+
+    // Guardrail for the Philippine local delivery rate used by the checkout UI
+    if ($shipping_fee > 0 && $shipping_fee < 49) {
+        $shipping_fee = 49;
+    }
+    $total_amount += $shipping_fee;
     
     // Create order
     $order_sql = "INSERT INTO orders (user_id, customer_name, customer_email, customer_phone, delivery_address, city, province, payment_method, total_amount) 

@@ -680,3 +680,31 @@ button[type="submit"]:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
+
+/* Inventory Features */
+.stock-badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: white;
+    text-transform: uppercase;
+    z-index: 10;
+}
+
+.menu-item-icon {
+    position: relative;
+}
+
+.btn-stock {
+    background-color: #fff3e0;
+    color: #e65100;
+}
+
+.btn-stock:hover {
+    background-color: #e65100;
+    color: white;
+}

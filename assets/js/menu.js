@@ -59,15 +59,31 @@ document.addEventListener('DOMContentLoaded', function() {
     // Product modal functionality
     productCards.forEach(card => {
         card.addEventListener('click', function() {
+            const stock = parseInt(card.dataset.stock) || 0;
+            if (stock === 0) {
+                return; // Don't open modal for out of stock items
+            }
             openProductModal(card);
         });
 
         card.addEventListener('keydown', function(event) {
+            const stock = parseInt(card.dataset.stock) || 0;
+            if (stock === 0) {
+                return; // Don't open modal for out of stock items
+            }
             if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
                 openProductModal(card);
             }
         });
+        
+        // Add out-of-stock styling
+        const stock = parseInt(card.dataset.stock) || 0;
+        if (stock === 0) {
+            card.style.opacity = '0.6';
+            card.style.cursor = 'not-allowed';
+            card.setAttribute('aria-disabled', 'true');
+        }
     });
 
     function openProductModal(card) {
@@ -75,6 +91,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const productName = card.dataset.productName;
         const productDesc = card.dataset.productDesc;
         const productImage = card.dataset.productImage || card.querySelector('img')?.getAttribute('src') || 'Coffee/SpanishLatte.png';
+        const stock = parseInt(card.dataset.stock) || 0;
         const price16 = parsePriceValue(
             card.getAttribute('data-price-16oz') ||
             card.getAttribute('data-price-16') ||
@@ -98,6 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Keep product prices in modal state to guarantee recalculation works.
         modalProductName.dataset.price16 = String(price16);
         modalProductName.dataset.price22 = String(price22);
+        modalProductName.dataset.stock = String(stock);
 
         sizeButtons[0].dataset.price = String(price16);
         sizeButtons[1].dataset.price = String(price22);
@@ -109,6 +127,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
         quantityInput.value = 1;
         specialInstructionsInput.value = '';
+
+        // Handle out of stock status
+        const stockWarning = document.getElementById('stockWarning');
+        const buyNowBtn = document.getElementById('buyNowBtn');
+        const addToCartBtn = document.getElementById('addToCartBtn');
+        const sizeOptions = document.querySelector('.size-options');
+        const quantityControl = document.querySelector('.quantity-control');
+        
+        if (stock === 0) {
+            stockWarning.style.display = 'block';
+            buyNowBtn.disabled = true;
+            addToCartBtn.disabled = true;
+            sizeOptions.style.opacity = '0.5';
+            sizeOptions.style.pointerEvents = 'none';
+            quantityControl.style.opacity = '0.5';
+            quantityControl.style.pointerEvents = 'none';
+            buyNowBtn.style.opacity = '0.5';
+            addToCartBtn.style.opacity = '0.5';
+        } else {
+            stockWarning.style.display = 'none';
+            buyNowBtn.disabled = false;
+            addToCartBtn.disabled = false;
+            sizeOptions.style.opacity = '1';
+            sizeOptions.style.pointerEvents = 'auto';
+            quantityControl.style.opacity = '1';
+            quantityControl.style.pointerEvents = 'auto';
+            buyNowBtn.style.opacity = '1';
+            addToCartBtn.style.opacity = '1';
+        }
 
         updatePriceDisplay();
         productModal.show();

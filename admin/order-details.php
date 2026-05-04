@@ -172,6 +172,23 @@ if ($order['status'] === 'cancelled') $status_class = 'cancelled';
     </div>
 </div>
 
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <div class="section-card">
+            <div class="section-card-header">
+                <h3 class="section-card-title">Delivery Location Map</h3>
+            </div>
+            <div id="orderMap" style="height: 400px; border-radius: 8px; overflow: hidden;"></div>
+            <div style="padding: 20px 0; border-top: 1px solid #e0d9cd; margin-top: 15px;">
+                <div style="margin-bottom: 15px;">
+                    <label style="color: #999; font-size: 0.9rem;">Distance to Store</label>
+                    <p id="routeDistance" style="font-size: 1.1rem; font-weight: bold;">Calculating...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="cancelOrderDialog" class="cancel-order-overlay" aria-hidden="true">
     <div class="cancel-order-dialog" role="dialog" aria-modal="true" aria-labelledby="cancelOrderDialogTitle">
         <div class="cancel-order-content">
@@ -461,6 +478,126 @@ document.addEventListener('DOMContentLoaded', () => {
     if (statusSelect) {
         statusSelect.setAttribute('data-previous-status', statusSelect.value);
         toggleCancellationNoteGroup(statusSelect.value);
+    }
+});
+</script>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Leaflet Routing Machine JS -->
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const mapEl = document.getElementById('orderMap');
+    if (!mapEl) return;
+
+    // Initialize map centered on Dasmariñas
+    const map = L.map('orderMap').setView([14.32, 120.95], 12);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Store location
+    const storeAddress = '5th Street, Santa Cristina 1, Bagong Bayan, Dasmariñas, Cavite, Calabarzon, 4115, Philippines';
+    const deliveryAddress = '<?php echo addslashes($order['delivery_address'] ?? ''); ?>';
+    let storeMarker = null;
+    let customerMarker = null;
+    let routingControl = null;
+
+    // Custom icons
+    const customerIcon = L.icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+    });
+
+    const storeIcon = L.icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+    });
+
+    // Geocode store address and add marker, then geocode delivery address
+    (async function() {
+        try {
+            // First, geocode and place store marker
+            const storeSearchUrl = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(storeAddress)}&limit=1`;
+            const storeRes = await fetch(storeSearchUrl);
+            const storeResults = await storeRes.json();
+            
+            if (storeResults && storeResults.length) {
+                const s = storeResults[0];
+                const storeLatLng = L.latLng(parseFloat(s.lat), parseFloat(s.lon));
+                storeMarker = L.marker(storeLatLng, { icon: storeIcon }).addTo(map);
+                storeMarker.bindPopup(`<b>KapeLagi Store</b><br>${s.display_name}`);
+            }
+
+            // Now geocode delivery address
+            if (!deliveryAddress || deliveryAddress === '') {
+                document.getElementById('routeDistance').textContent = 'No delivery address provided';
+                return;
+            }
+
+            const deliverySearchUrl = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(deliveryAddress)}&limit=1`;
+            const deliveryRes = await fetch(deliverySearchUrl);
+            const deliveryResults = await deliveryRes.json();
+            
+            if (deliveryResults && deliveryResults.length) {
+                const c = deliveryResults[0];
+                const customerLatLng = L.latLng(parseFloat(c.lat), parseFloat(c.lon));
+                customerMarker = L.marker(customerLatLng, { icon: customerIcon }).addTo(map);
+                customerMarker.bindPopup(`<b>Delivery Location</b><br>${c.display_name}`);
+                
+                // Fit map to show both markers
+                const group = new L.featureGroup([customerMarker]);
+                if (storeMarker) group.addLayer(storeMarker);
+                map.fitBounds(group.getBounds().pad(0.1));
+
+                // Draw route - now storeMarker is definitely set
+                if (storeMarker) {
+                    const storeLatLng = storeMarker.getLatLng();
+                    setTimeout(() => drawRoute(customerLatLng, storeLatLng), 800);
+                }
+            } else {
+                document.getElementById('routeDistance').textContent = 'Address not found on map';
+            }
+        } catch (err) {
+            console.error('Error geocoding:', err);
+            document.getElementById('routeDistance').textContent = 'Error locating addresses';
+        }
+    })();
+
+    // Draw route and calculate distance
+    function drawRoute(from, to) {
+        if (!from || !to) return;
+        
+        if (routingControl) {
+            try { map.removeControl(routingControl); } catch (e) {}
+            routingControl = null;
+        }
+
+        routingControl = L.Routing.control({
+            waypoints: [from, to],
+            router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1', profile: 'driving' }),
+            fitSelectedRoutes: false,
+            show: false,
+            lineOptions: {
+                styles: [{ color: '#b18b63', weight: 4, opacity: 0.8 }]
+            }
+        }).on('routesfound', function(e) {
+            if (e.routes && e.routes.length > 0) {
+                const distance = e.routes[0].summary.totalDistance / 1000; // Convert to km
+                document.getElementById('routeDistance').textContent = distance.toFixed(2) + ' km';
+            }
+        }).addTo(map);
     }
 });
 </script>
