@@ -94,6 +94,18 @@ function normalizeProductRow($row, $catalogItem = null)
     return $row;
 }
 
+function applyAvailableStock($conn, $rows)
+{
+    foreach ($rows as &$row) {
+        $fallbackStock = (int) ($row['stock'] ?? 0);
+        $row['available_stock'] = get_product_available_stock($conn, (int) ($row['id'] ?? 0), $fallbackStock);
+        $row['stock'] = $row['available_stock'];
+    }
+    unset($row);
+
+    return $rows;
+}
+
 function buildMenuProducts($dbRows)
 {
     $catalog = getMenuCatalog();
@@ -184,7 +196,7 @@ $dbProducts = [];
 while ($row = $result->fetch_assoc()) {
     $dbProducts[] = $row;
 }
-$products = buildMenuProducts($dbProducts);
+$products = applyAvailableStock($conn, buildMenuProducts($dbProducts));
 
 // Get categories
 $categories = ['Coffee', 'Non-Coffee', 'Fruity'];
@@ -251,14 +263,14 @@ $categories = ['Coffee', 'Non-Coffee', 'Fruity'];
                             data-product-missing="<?php echo !empty($product['missing_from_db']) ? '1' : '0'; ?>"
                             data-price-16oz="<?php echo htmlspecialchars($product['price_16oz_effective']); ?>"
                             data-price-22oz="<?php echo htmlspecialchars($product['price_22oz_effective']); ?>"
-                            data-stock="<?php echo isset($product['stock']) ? (int)$product['stock'] : 0; ?>"
+                            data-stock="<?php echo isset($product['available_stock']) ? (int)$product['available_stock'] : (isset($product['stock']) ? (int)$product['stock'] : 0); ?>"
                             role="button"
                             tabindex="0"
                             <?php echo empty($product['id']) ? 'aria-disabled="true"' : ''; ?>
                             aria-label="View <?php echo htmlspecialchars($product['name']); ?> details">
                             <div class="product-image">
                                 <img src="<?php echo htmlspecialchars($product['image_path']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>">
-                                <?php if (isset($product['stock']) && $product['stock'] == 0): ?>
+                                <?php if ((int)($product['available_stock'] ?? $product['stock'] ?? 0) == 0): ?>
                                     <div class="out-of-stock-overlay">
                                         <span class="out-of-stock-label">OUT OF STOCK</span>
                                     </div>
@@ -311,7 +323,7 @@ $categories = ['Coffee', 'Non-Coffee', 'Fruity'];
                                 <label>Quantity:</label>
                                 <div class="quantity-control">
                                     <button class="qty-btn minus">−</button>
-                                    <input type="number" id="quantityInput" value="1" min="1" aria-label="Quantity">
+                                    <input type="number" id="quantityInput" value="1" min="1" max="99" aria-label="Quantity">
                                     <button class="qty-btn plus">+</button>
                                 </div>
                             </div>
