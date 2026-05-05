@@ -30,6 +30,29 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <i class="fas fa-bars"></i> Menu Items
             </a>
         </li>
+        <?php
+        // low stock badge
+        $low_stock_count = 0;
+        if (isset($conn)) {
+            $r = $conn->query("SELECT COUNT(*) AS cnt FROM ingredients WHERE stock <= low_stock_threshold");
+            if ($r) {
+                $low_stock_count = (int) ($r->fetch_assoc()['cnt'] ?? 0);
+            }
+        }
+        ?>
+        <li class="nav-item">
+            <a class="nav-link <?php echo $current_page === 'inventory.php' ? 'active' : ''; ?>" href="inventory.php">
+                <i class="fas fa-warehouse"></i> Inventory
+                <?php if ($low_stock_count > 0): ?>
+                    <span class="badge bg-danger" style="margin-left:8px;"><?php echo $low_stock_count; ?></span>
+                <?php endif; ?>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <?php echo $current_page === 'product-ingredients.php' ? 'active' : ''; ?>" href="product-ingredients.php">
+                <i class="fas fa-project-diagram"></i> Product Ingredients
+            </a>
+        </li>
         <li class="nav-item">
             <a class="nav-link <?php echo $current_page === 'analytics.php' ? 'active' : ''; ?>" href="analytics.php">
                 <i class="fas fa-chart-bar"></i> Analytics

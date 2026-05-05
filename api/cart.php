@@ -3,6 +3,14 @@ header('Content-Type: application/json');
 include '../config/db.php';
 include '../config/session.php';
 
+// ensure ingredient and mapping tables exist
+if (function_exists('ensure_ingredients_table')) {
+    ensure_ingredients_table($conn);
+}
+if (function_exists('ensure_product_ingredients_table')) {
+    ensure_product_ingredients_table($conn);
+}
+
 function ensure_order_payment_method_column($conn) {
     static $checked = false;
     if ($checked) {
@@ -227,18 +235,35 @@ elseif ($action == 'create_order') {
     $total_amount += $shipping_fee;
     
     // Create order
+    // Start transaction to ensure stock and ingredients consistency
+    $conn->begin_transaction();
     $order_sql = "INSERT INTO orders (user_id, customer_name, customer_email, customer_phone, delivery_address, city, province, payment_method, total_amount) 
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $order_stmt = $conn->prepare($order_sql);
     $order_stmt->bind_param("isssssssd", $user_id, $customer_name, $customer_email, $customer_phone, $delivery_address, $city, $province, $payment_method, $total_amount);
-    
+
     if ($order_stmt->execute()) {
         $order_id = $conn->insert_id;
-        
-        // Add order items
+
+        // Collect ingredient usage per item and verify availability in the ingredient's own unit.
+        [$recipeOk, $recipeMessage, $ingredient_requirements] = collect_order_ingredient_requirements($conn, $cart_items);
+        if (!$recipeOk) {
+            $conn->rollback();
+            echo json_encode(['success' => false, 'message' => $recipeMessage]);
+            exit;
+        }
+
+        [$consumeOk, $consumeMessage] = consume_order_ingredient_requirements($conn, $ingredient_requirements);
+        if (!$consumeOk) {
+            $conn->rollback();
+            echo json_encode(['success' => false, 'message' => $consumeMessage]);
+            exit;
+        }
+
+        // Add order items and decrement ingredient inventory only
         $item_sql = "INSERT INTO order_items (order_id, product_id, product_name, size, price, quantity) VALUES (?, ?, ?, ?, ?, ?)";
         $item_stmt = $conn->prepare($item_sql);
-        
+
         foreach ($cart_items as $item) {
             $price16 = (float)$item['price_16oz'];
             $price22 = (float)$item['price_22oz'];
@@ -246,7 +271,11 @@ elseif ($action == 'create_order') {
             $price = $item['size'] == '22oz' ? $effectivePrice22 : $price16;
             $item_stmt->bind_param("iissdi", $order_id, $item['product_id'], $item['name'], $item['size'], $price, $item['quantity']);
             $item_stmt->execute();
+
         }
+
+        // Commit transaction
+        $conn->commit();
         
         // Clear cart
         $clear_sql = "DELETE FROM cart WHERE user_id = ?";

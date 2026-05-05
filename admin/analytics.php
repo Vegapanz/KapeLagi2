@@ -28,6 +28,23 @@ $revenue = (float) ($kpis['revenue'] ?? 0);
 $avg_order_value = $valid_orders > 0 ? ($revenue / $valid_orders) : 0;
 $cancel_rate = $total_orders > 0 ? (($cancelled_orders / $total_orders) * 100) : 0;
 
+// Inventory KPIs (current snapshot)
+$inventory_query = $conn->query("SELECT 
+    COALESCE(SUM(stock),0) AS total_stock, 
+    SUM(CASE WHEN stock = 0 THEN 1 ELSE 0 END) AS out_of_stock_count,
+    SUM(CASE WHEN stock < 5 THEN 1 ELSE 0 END) AS low_stock_count
+    FROM products WHERE (is_archived = 0 OR is_archived IS NULL)");
+$inventory = $inventory_query ? $inventory_query->fetch_assoc() : ['total_stock' => 0, 'out_of_stock_count' => 0, 'low_stock_count' => 0];
+
+// Low stock items list
+$low_stock_items = [];
+$low_query = $conn->query("SELECT id, name, stock FROM products WHERE (is_archived = 0 OR is_archived IS NULL) AND stock < 5 ORDER BY stock ASC, name ASC LIMIT 12");
+if ($low_query) {
+    while ($row = $low_query->fetch_assoc()) {
+        $low_stock_items[] = $row;
+    }
+}
+
 $daily_query = $conn->query("
     SELECT
         DATE(created_at) as day,
@@ -183,6 +200,62 @@ for ($h = 0; $h < 24; $h++) {
         </div>
     </div>
 </div>
+
+<!-- Inventory KPIs -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="kpi-card">
+            <div class="kpi-icon"><i class="fas fa-warehouse"></i></div>
+            <div class="kpi-label">Total Inventory</div>
+            <div class="kpi-value"><?php echo number_format((int)$inventory['total_stock']); ?> units</div>
+            <div class="kpi-trend">Current snapshot</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kpi-card">
+            <div class="kpi-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="kpi-label">Low Stock Items</div>
+            <div class="kpi-value"><?php echo number_format((int)$inventory['low_stock_count']); ?></div>
+            <div class="kpi-trend">Below 5 units</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kpi-card">
+            <div class="kpi-icon"><i class="fas fa-times-circle"></i></div>
+            <div class="kpi-label">Out of Stock</div>
+            <div class="kpi-value"><?php echo number_format((int)$inventory['out_of_stock_count']); ?></div>
+            <div class="kpi-trend">No available units</div>
+        </div>
+    </div>
+</div>
+
+<?php if (!empty($low_stock_items)): ?>
+    <div class="section-card mb-4">
+        <div class="section-card-header">
+            <h3 class="section-card-title">Low Stock Items</h3>
+        </div>
+        <div style="overflow:auto;">
+            <table class="table" style="width:100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th style="text-align:left; padding:8px;">Item</th>
+                        <th style="text-align:right; padding:8px;">Stock</th>
+                        <th style="text-align:right; padding:8px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($low_stock_items as $li): ?>
+                        <tr>
+                            <td style="padding:8px;"><a href="menu-items.php#item-<?php echo $li['id']; ?>"><?php echo htmlspecialchars($li['name']); ?></a></td>
+                            <td style="padding:8px; text-align:right; font-weight:bold; color: <?php echo $li['stock'] == 0 ? '#d32f2f' : '#fbc02d'; ?>; "><?php echo (int)$li['stock']; ?></td>
+                            <td style="padding:8px; text-align:right;"><a class="btn btn-sm" href="menu-items.php" style="background-color:#c4a870; color:#fff;">Manage</a></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+<?php endif; ?>
 
 <div class="row mb-4">
     <div class="col-lg-8">

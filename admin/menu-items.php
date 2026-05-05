@@ -28,6 +28,13 @@ $query = "
 ";
 
 $products = $conn->query($query);
+$productRows = [];
+if ($products) {
+    while ($row = $products->fetch_assoc()) {
+        $row['available_stock'] = get_product_available_stock($conn, (int) $row['id'], (int) ($row['stock'] ?? 0));
+        $productRows[] = $row;
+    }
+}
 
 // Get categories for filter
 $categories_result = $conn->query("SELECT DISTINCT category FROM products WHERE (is_archived = 0 OR is_archived IS NULL) ORDER BY category");
@@ -60,22 +67,23 @@ $archived_count = (int) ($archived_count_result->fetch_assoc()['count'] ?? 0);
 
 <div class="row">
     <?php
-    if ($products->num_rows > 0) {
-        while ($product = $products->fetch_assoc()) {
+    if (!empty($productRows)) {
+            foreach ($productRows as $product) {
             $avg_price = ($product['price_16oz'] + ($product['price_22oz'] ?? 0)) / 2;
             $growth = $product['sales_this_month'] > 0 ? 8 : -8;
             $growth_class = $growth > 0 ? 'positive' : 'negative';
+                $available_stock = (int) ($product['available_stock'] ?? $product['stock'] ?? 0);
             
             // Determine stock status
             $stock_status = 'in-stock';
             $stock_color = '#7cb342';
             $stock_label = 'In Stock';
             
-            if ($product['stock'] == 0) {
+                if ($available_stock == 0) {
                 $stock_status = 'out-of-stock';
                 $stock_color = '#d32f2f';
                 $stock_label = 'Out of Stock';
-            } elseif ($product['stock'] < 5) {
+                } elseif ($available_stock < 5) {
                 $stock_status = 'low-stock';
                 $stock_color = '#fbc02d';
                 $stock_label = 'Low Stock';
@@ -100,7 +108,7 @@ $archived_count = (int) ($archived_count_result->fetch_assoc()['count'] ?? 0);
                         <div class="menu-item-stat">
                             <span class="menu-item-stat-label">Stock</span>
                             <span class="menu-item-stat-value" style="color: <?php echo $stock_color; ?>; font-weight: bold;">
-                                <?php echo $product['stock']; ?> units
+                                <?php echo $available_stock; ?> units
                             </span>
                         </div>
                         <div class="menu-item-stat">
@@ -119,10 +127,10 @@ $archived_count = (int) ($archived_count_result->fetch_assoc()['count'] ?? 0);
                         </div>
 
                         <div style="margin-top: 15px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-                            <button class="btn-action btn-edit" title="Edit" onclick="openEditModal(<?php echo $product['id']; ?>, '<?php echo htmlspecialchars($product['name']); ?>', '<?php echo htmlspecialchars($product['category']); ?>', '<?php echo htmlspecialchars($product['description']); ?>', <?php echo $product['price_16oz']; ?>, <?php echo $product['price_22oz']; ?>, <?php echo $product['stock']; ?>)">
+                            <button class="btn-action btn-edit" title="Edit" onclick="openEditModal(<?php echo $product['id']; ?>, '<?php echo htmlspecialchars($product['name']); ?>', '<?php echo htmlspecialchars($product['category']); ?>', '<?php echo htmlspecialchars($product['description']); ?>', <?php echo $product['price_16oz']; ?>, <?php echo $product['price_22oz']; ?>, <?php echo $available_stock; ?>)">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn-action btn-stock" title="Update Stock" onclick="openStockModal(<?php echo $product['id']; ?>, '<?php echo htmlspecialchars($product['name']); ?>', <?php echo $product['stock']; ?>)">
+                            <button class="btn-action btn-stock" title="Update Stock" onclick="openStockModal(<?php echo $product['id']; ?>, '<?php echo htmlspecialchars($product['name']); ?>', <?php echo $available_stock; ?>)">
                                 <i class="fas fa-boxes"></i>
                             </button>
                             <?php if ($scope === 'archived'): ?>

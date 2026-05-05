@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const specialInstructionsInput = document.getElementById('specialInstructions');
     
     let currentFilter = 'Coffee';
+    const MAX_QUANTITY = 99;
     
     // Filter functionality
     filterBtns.forEach(btn => {
@@ -195,12 +196,17 @@ document.addEventListener('DOMContentLoaded', function() {
     
     plusBtn.addEventListener('click', function() {
         const value = parseInt(quantityInput.value) || 1;
-        quantityInput.value = value + 1;
+        quantityInput.value = Math.min(MAX_QUANTITY, value + 1);
         updatePriceDisplay();
     });
     
     quantityInput.addEventListener('change', updatePriceDisplay);
     quantityInput.addEventListener('input', updatePriceDisplay);
+    quantityInput.addEventListener('blur', function() {
+        const value = parseInt(quantityInput.value, 10);
+        quantityInput.value = Number.isFinite(value) && value >= 1 ? Math.min(MAX_QUANTITY, value) : 1;
+        updatePriceDisplay();
+    });
     
     function updatePriceDisplay() {
         const activeSize = document.querySelector('.size-btn.active');
@@ -214,7 +220,12 @@ document.addEventListener('DOMContentLoaded', function() {
             : modalProductName.dataset.price16;
 
         const price = parsePriceValue(activeSize.dataset.price || fallbackPrice);
-        const quantity = Math.max(1, parseInt(quantityInput.value, 10) || 1);
+        if (quantityInput.value === '') {
+            totalPriceEl.textContent = '0.00₱';
+            return;
+        }
+
+        const quantity = Math.min(MAX_QUANTITY, Math.max(1, parseInt(quantityInput.value, 10) || 1));
         quantityInput.value = quantity;
         const total = price * quantity;
         
