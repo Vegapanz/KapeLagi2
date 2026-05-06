@@ -85,6 +85,27 @@ const UNIT_OPTIONS = [
                 <label>Stock Amount</label>
                 <input id="ingredientStock" name="stock" type="number" step="0.01" class="form-control" value="0">
             </div>
+            <div id="ingredientPackageFields" style="display:none;">
+                <div class="form-group mb-2">
+                    <label>Package Size</label>
+                    <input id="ingredientPackageSize" name="package_size" type="number" step="0.01" class="form-control" value="1" placeholder="e.g. 500">
+                </div>
+                <div class="form-group mb-2">
+                    <label>Package Unit</label>
+                    <select id="ingredientPackageUnit" name="package_unit" class="form-control">
+                        <option value="">Select unit</option>
+                        <option value="milliliters">Milliliters (mL)</option>
+                        <option value="liters">Liters (L)</option>
+                        <option value="grams">Grams (g)</option>
+                        <option value="kilograms">Kilograms (kg)</option>
+                        <option value="pieces">Pieces (pcs)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group mb-2">
+                <label>Density (g per mL)</label>
+                <input id="ingredientDensity" name="density_g_per_ml" type="number" step="0.0001" class="form-control" value="1" placeholder="1 for water-based ingredients">
+            </div>
             <div class="form-group mb-2">
                 <label>Low stock threshold</label>
                 <input id="ingredientThreshold" name="low_stock_threshold" type="number" step="0.01" class="form-control" value="5">
@@ -92,6 +113,29 @@ const UNIT_OPTIONS = [
             <div style="display:flex; gap:8px; margin-top:12px;">
                 <button class="btn" type="submit" style="background-color:#c4a870; color:#fff;">Save</button>
                 <button type="button" class="btn" onclick="closeIngredientModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Adjust Stock Modal -->
+<div id="adjustStockModal" class="modal" style="display:none; position:fixed; z-index:1001; left:0; top:0; width:100%; height:100%; background-color: rgba(0,0,0,0.5);">
+    <div class="modal-content" style="background-color:white; margin: 10% auto; padding: 20px; border-radius:8px; width:90%; max-width:420px;">
+        <h3 id="adjustStockModalTitle">Adjust Stock</h3>
+        <form id="adjustStockForm" onsubmit="submitAdjustStock(event)">
+            <input type="hidden" id="adjustStockId" value="0">
+            <div class="form-group mb-2">
+                <label>Ingredient</label>
+                <input id="adjustStockName" class="form-control" readonly>
+            </div>
+            <div class="form-group mb-2">
+                <label>New Stock</label>
+                <input id="adjustStockValue" type="number" step="0.01" class="form-control" required>
+            </div>
+            <div id="adjustStockError" style="display:none; color:#c62828; margin-bottom:10px;"></div>
+            <div style="display:flex; gap:8px; margin-top:12px;">
+                <button class="btn" type="submit" style="background-color:#c4a870; color:#fff;">Save</button>
+                <button type="button" class="btn" onclick="closeAdjustStockModal()">Cancel</button>
             </div>
         </form>
     </div>
@@ -178,7 +222,7 @@ async function fetchIngredients() {
                         <td style="padding:8px; text-align:right;">${Number(it.stock)} ${escapeHtml(it.unit)}</td>
                         <td style="padding:8px; text-align:right;">${Number(it.low_stock_threshold)}</td>
                         <td style="padding:8px;">${usedIn}</td>
-                        <td style="padding:8px; text-align:right;"><button class="btn btn-sm" onclick="openEditIngredient(${it.id}, '${escapeJs(it.name)}', '${escapeJs(it.unit)}', ${Number(it.stock)}, ${Number(it.low_stock_threshold)})">Edit</button> <button class="btn btn-sm" onclick="openAdjustStock(${it.id}, '${escapeJs(it.name)}', ${Number(it.stock)})">Adjust</button> <button class="btn btn-sm" onclick="deleteIngredient(${it.id})" style="background:#e53935; color:#fff;">Delete</button></td>
+                        <td style="padding:8px; text-align:right;"><button class="btn btn-sm" onclick="openEditIngredient(${it.id}, '${escapeJs(it.name)}', '${escapeJs(it.unit)}', ${Number(it.stock)}, ${Number(it.low_stock_threshold)}, ${Number(it.package_size || 1)}, '${escapeJs(it.package_unit || '')}', ${Number(it.density_g_per_ml || 1)})">Edit</button> <button class="btn btn-sm" onclick="openAdjustStock(${it.id}, '${escapeJs(it.name)}', ${Number(it.stock)})">Adjust</button> <button class="btn btn-sm" onclick="deleteIngredient(${it.id})" style="background:#e53935; color:#fff;">Delete</button></td>
                     </tr>
                 `;
             }
@@ -289,17 +333,25 @@ function openAddIngredient() {
     document.getElementById('ingredientName').value = '';
     document.getElementById('ingredientUnit').value = 'pieces';
     document.getElementById('ingredientStock').value = 0;
+    document.getElementById('ingredientPackageSize').value = 1;
+    document.getElementById('ingredientPackageUnit').value = 'milliliters';
+    document.getElementById('ingredientDensity').value = 1;
     document.getElementById('ingredientThreshold').value = 5;
+    togglePackageFields();
     document.getElementById('ingredientModal').style.display = 'block';
 }
 
-function openEditIngredient(id, name, unit, stock, threshold) {
+function openEditIngredient(id, name, unit, stock, threshold, packageSize, packageUnit, density) {
     document.getElementById('ingredientModalTitle').innerText = 'Edit Ingredient';
     document.getElementById('ingredientId').value = id;
     document.getElementById('ingredientName').value = name;
     document.getElementById('ingredientUnit').value = normalizeUnitValue(unit);
     document.getElementById('ingredientStock').value = stock;
     document.getElementById('ingredientThreshold').value = threshold;
+    document.getElementById('ingredientPackageSize').value = packageSize || 1;
+    document.getElementById('ingredientPackageUnit').value = normalizeUnitValue(packageUnit || 'milliliters');
+    document.getElementById('ingredientDensity').value = density || 1;
+    togglePackageFields();
     document.getElementById('ingredientModal').style.display = 'block';
 }
 
@@ -312,6 +364,23 @@ function normalizeUnitValue(unit) {
     if (['kilogram', 'kilograms', 'kg'].includes(value)) return 'kilograms';
     if (['piece', 'pieces', 'pc', 'pcs'].includes(value)) return 'pieces';
     return value || 'units';
+}
+
+function togglePackageFields() {
+    const unit = document.getElementById('ingredientUnit').value;
+    const packageFields = document.getElementById('ingredientPackageFields');
+    const packageSize = document.getElementById('ingredientPackageSize');
+    const packageUnit = document.getElementById('ingredientPackageUnit');
+
+    if (unit === 'pieces') {
+        packageFields.style.display = 'block';
+        packageSize.required = true;
+        packageUnit.required = true;
+    } else {
+        packageFields.style.display = 'none';
+        packageSize.required = false;
+        packageUnit.required = false;
+    }
 }
 
 function closeIngredientModal() {
@@ -334,15 +403,37 @@ async function submitIngredient(e) {
     }
 }
 
-async function openAdjustStock(id, name, currentStock) {
-    const qty = prompt('Enter new stock for "' + name + '"', currentStock);
-    if (qty === null) return;
+function openAdjustStock(id, name, currentStock) {
+    document.getElementById('adjustStockId').value = id;
+    document.getElementById('adjustStockName').value = name;
+    document.getElementById('adjustStockValue').value = currentStock;
+    document.getElementById('adjustStockError').style.display = 'none';
+    document.getElementById('adjustStockError').textContent = '';
+    document.getElementById('adjustStockModal').style.display = 'block';
+}
+
+function closeAdjustStockModal() {
+    document.getElementById('adjustStockModal').style.display = 'none';
+}
+
+async function submitAdjustStock(e) {
+    e.preventDefault();
+    const id = document.getElementById('adjustStockId').value;
+    const qty = document.getElementById('adjustStockValue').value;
     const fd = new FormData();
     fd.append('id', id);
     fd.append('stock', qty);
     const res = await fetch('api.php?action=update-ingredient-stock', { method: 'POST', body: fd });
     const json = await res.json();
-    if (json.success) fetchIngredients(); else alert(json.error || 'Failed');
+    if (json.success) {
+        closeAdjustStockModal();
+        fetchIngredients();
+        return;
+    }
+
+    const errorBox = document.getElementById('adjustStockError');
+    errorBox.textContent = json.error || 'Failed';
+    errorBox.style.display = 'block';
 }
 
 async function deleteIngredient(id) {
@@ -368,6 +459,7 @@ document.getElementById('productCategoryFilter').addEventListener('change', fetc
 document.getElementById('sortSelect').addEventListener('change', () => { window._invPageIdx = {}; fetchIngredients(); });
 document.getElementById('perPageSelect').addEventListener('change', () => { window._invPageIdx = {}; fetchIngredients(); });
 document.getElementById('inventorySearch').addEventListener('input', () => { window._invPageIdx = {}; fetchIngredients(); });
+document.getElementById('ingredientUnit').addEventListener('change', togglePackageFields);
 fetchIngredients();
 </script>
 

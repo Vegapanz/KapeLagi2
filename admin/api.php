@@ -268,7 +268,7 @@ function delete_menu_item($conn) {
 // INGREDIENTS / INVENTORY
 // ---------------------
 function get_ingredients($conn) {
-    $sql = "SELECT i.id, i.name, i.unit, i.stock, i.package_size, i.package_unit, i.low_stock_threshold, i.updated_at, COALESCE(i.category,'other') AS category,
+    $sql = "SELECT i.id, i.name, i.unit, i.stock, i.package_size, i.package_unit, i.density_g_per_ml, i.low_stock_threshold, i.updated_at, COALESCE(i.category,'other') AS category,
                 GROUP_CONCAT(DISTINCT p.category SEPARATOR ',') AS product_categories
             FROM ingredients i
             LEFT JOIN product_ingredients pi ON pi.ingredient_id = i.id
@@ -297,6 +297,7 @@ function add_ingredient($conn) {
     $stock = floatval($_POST['stock'] ?? 0);
     $package_size = floatval($_POST['package_size'] ?? 1);
     $package_unit = trim($_POST['package_unit'] ?? 'pieces');
+    $density_g_per_ml = floatval($_POST['density_g_per_ml'] ?? 1);
     $threshold = floatval($_POST['low_stock_threshold'] ?? 5);
 
     if ($name === '') {
@@ -305,8 +306,8 @@ function add_ingredient($conn) {
         exit;
     }
 
-    $stmt = $conn->prepare("INSERT INTO ingredients (name, unit, stock, package_size, package_unit, low_stock_threshold) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param('ssddsd', $name, $unit, $stock, $package_size, $package_unit, $threshold);
+    $stmt = $conn->prepare("INSERT INTO ingredients (name, unit, stock, package_size, package_unit, density_g_per_ml, low_stock_threshold) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param('ssddsdd', $name, $unit, $stock, $package_size, $package_unit, $density_g_per_ml, $threshold);
     if ($stmt->execute()) {
         echo json_encode(['success' => true, 'id' => $stmt->insert_id]);
     } else {
@@ -324,8 +325,10 @@ function update_ingredient($conn) {
     $id = intval($_POST['id'] ?? 0);
     $name = trim($_POST['name'] ?? '');
     $unit = trim($_POST['unit'] ?? 'units');
+    $stock = floatval($_POST['stock'] ?? 0);
     $package_size = floatval($_POST['package_size'] ?? 1);
     $package_unit = trim($_POST['package_unit'] ?? 'pieces');
+    $density_g_per_ml = floatval($_POST['density_g_per_ml'] ?? 1);
     $threshold = floatval($_POST['low_stock_threshold'] ?? 5);
 
     if ($id <= 0 || $name === '') {
@@ -334,8 +337,8 @@ function update_ingredient($conn) {
         exit;
     }
 
-    $stmt = $conn->prepare("UPDATE ingredients SET name = ?, unit = ?, package_size = ?, package_unit = ?, low_stock_threshold = ? WHERE id = ?");
-    $stmt->bind_param('ssdsdi', $name, $unit, $package_size, $package_unit, $threshold, $id);
+    $stmt = $conn->prepare("UPDATE ingredients SET name = ?, unit = ?, stock = ?, package_size = ?, package_unit = ?, density_g_per_ml = ?, low_stock_threshold = ? WHERE id = ?");
+    $stmt->bind_param('ssddsddi', $name, $unit, $stock, $package_size, $package_unit, $density_g_per_ml, $threshold, $id);
     if ($stmt->execute()) {
         echo json_encode(['success' => true]);
     } else {

@@ -10,7 +10,7 @@ ensure_ingredients_table($conn);
 $products_res = $conn->query("SELECT id, name FROM products ORDER BY name ASC");
 $products = [];
 if ($products_res) while ($r = $products_res->fetch_assoc()) $products[] = $r;
-$ings_res = $conn->query("SELECT id, name, unit FROM ingredients ORDER BY name ASC");
+$ings_res = $conn->query("SELECT id, name, unit, package_size, package_unit FROM ingredients ORDER BY name ASC");
 $ingredients = [];
 if ($ings_res) while ($r = $ings_res->fetch_assoc()) $ingredients[] = $r;
 ?>
@@ -20,8 +20,25 @@ if ($ings_res) while ($r = $ings_res->fetch_assoc()) $ingredients[] = $r;
     <button class="btn-add-item" onclick="openAddMapping()"><i class="fas fa-plus"></i> ADD MAPPING</button>
 </div>
 
+<div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:14px;">
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <label for="mappingSearch" style="margin:0; color:#7a6a53;">Search</label>
+        <input id="mappingSearch" type="search" placeholder="Search product or ingredient..." style="padding:8px 10px; min-width:240px;">
+    </div>
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <label for="mappingProductFilter" style="margin:0; color:#7a6a53;">Product</label>
+        <select id="mappingProductFilter" style="padding:8px 10px; min-width:220px;">
+            <option value="">All products</option>
+            <?php foreach($products as $p): ?>
+                <option value="<?php echo $p['id']; ?>"><?php echo htmlspecialchars($p['name']); ?></option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+</div>
+
 <div class="section-card">
     <div style="overflow:auto;">
+        <div id="mappingPaginationTop" style="display:flex; justify-content:flex-end; gap:10px; align-items:center; padding:0 0 12px 0;"></div>
         <table id="mappingsTable" class="table" style="width:100%; border-collapse:collapse;">
             <thead>
                 <tr>
@@ -38,6 +55,7 @@ if ($ings_res) while ($r = $ings_res->fetch_assoc()) $ingredients[] = $r;
                 <tr><td colspan="7" style="text-align:center; color:#999; padding:30px;">Loading...</td></tr>
             </tbody>
         </table>
+        <div id="mappingPaginationBottom" style="display:flex; justify-content:flex-end; gap:10px; align-items:center; padding:12px 0 0 0;"></div>
     </div>
 </div>
 
@@ -102,8 +120,24 @@ async function loadMappings(){
     const maps = json.mappings;
     if (maps.length===0){ tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#999; padding:30px;">No mappings</td></tr>'; return; }
 
+    const searchTerm = (document.getElementById('mappingSearch')?.value || '').trim().toLowerCase();
+    const selectedProductId = (document.getElementById('mappingProductFilter')?.value || '').trim();
+    const perPage = Math.max(1, parseInt(window._mappingPerPage || '5', 10));
+
     const byProduct = {};
     for (const map of maps) {
+        if (selectedProductId && String(map.product_id) !== String(selectedProductId)) {
+            continue;
+        }
+        if (searchTerm) {
+            const haystack = [map.product_name, map.ingredient_name, map.size, map.stock_unit, map.quantity_per_unit, map.unit]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+            if (!haystack.includes(searchTerm)) {
+                continue;
+            }
+        }
         const key = `${map.product_id}`;
         if (!byProduct[key]) {
             byProduct[key] = {
@@ -115,8 +149,22 @@ async function loadMappings(){
         byProduct[key].items.push(map);
     }
 
+    const groups = Object.values(byProduct);
+    if (groups.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#999; padding:30px;">No mappings found</td></tr>';
+        renderMappingPagination('mappingPaginationTop', 1, 1, 0, perPage);
+        renderMappingPagination('mappingPaginationBottom', 1, 1, 0, perPage);
+        return;
+    }
+    const totalPages = Math.max(1, Math.ceil(groups.length / perPage));
+    const currentPage = Math.min(Math.max(1, parseInt(window._mappingPage || '1', 10)), totalPages);
+    window._mappingPage = currentPage;
+
+    const pageStart = (currentPage - 1) * perPage;
+    const pageGroups = groups.slice(pageStart, pageStart + perPage);
+
     tbody.innerHTML = '';
-    Object.values(byProduct).forEach(group => {
+    pageGroups.forEach(group => {
         const groupedBySize = {};
         group.items.forEach(item => {
             const sizeKey = item.size || '16oz';
@@ -167,6 +215,68 @@ async function loadMappings(){
             });
         });
     });
+
+    renderMappingPagination('mappingPaginationTop', currentPage, totalPages, groups.length, perPage);
+    renderMappingPagination('mappingPaginationBottom', currentPage, totalPages, groups.length, perPage);
+}
+
+function renderMappingPagination(targetId, currentPage, totalPages, totalGroups, perPage) {
+    const target = document.getElementById(targetId);
+    if (!target) return;
+
+    if (totalGroups === 0) {
+        target.innerHTML = '';
+        return;
+    }
+
+    target.innerHTML = `
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <span style="color:#7a6a53; font-size:0.9rem;">Page ${currentPage} of ${totalPages}</span>
+            <select id="mappingPerPageSelect" style="padding:6px 10px;">
+                <option value="5" ${perPage === 5 ? 'selected' : ''}>5</option>
+                <option value="10" ${perPage === 10 ? 'selected' : ''}>10</option>
+                <option value="20" ${perPage === 20 ? 'selected' : ''}>20</option>
+            </select>
+            <button class="btn btn-sm" onclick="changeMappingPage(${Math.max(1, currentPage - 1)})" ${currentPage <= 1 ? 'disabled' : ''}>Prev</button>
+            <button class="btn btn-sm" onclick="changeMappingPage(${Math.min(totalPages, currentPage + 1)})" ${currentPage >= totalPages ? 'disabled' : ''}>Next</button>
+        </div>
+    `;
+
+    const perPageSelect = target.querySelector('#mappingPerPageSelect');
+    if (perPageSelect && !perPageSelect.dataset.bound) {
+        perPageSelect.dataset.bound = '1';
+        perPageSelect.addEventListener('change', function() {
+            window._mappingPerPage = parseInt(this.value || '5', 10);
+            window._mappingPage = 1;
+            loadMappings();
+        });
+    }
+}
+
+function changeMappingPage(page) {
+    window._mappingPage = Math.max(1, page);
+    loadMappings();
+}
+
+function setupMappingFilters() {
+    const searchInput = document.getElementById('mappingSearch');
+    const productFilter = document.getElementById('mappingProductFilter');
+
+    if (searchInput && !searchInput.dataset.bound) {
+        searchInput.dataset.bound = '1';
+        searchInput.addEventListener('input', function() {
+            window._mappingPage = 1;
+            loadMappings();
+        });
+    }
+
+    if (productFilter && !productFilter.dataset.bound) {
+        productFilter.dataset.bound = '1';
+        productFilter.addEventListener('change', function() {
+            window._mappingPage = 1;
+            loadMappings();
+        });
+    }
 }
 function openAddMapping(){
     document.getElementById('mappingTitle').innerText = 'Add Mapping';
@@ -196,7 +306,7 @@ function normalizeUnitValue(unit) {
     if (['gram', 'grams', 'g'].includes(value)) return 'grams';
     if (['milligram', 'milligrams', 'mg'].includes(value)) return 'milligrams';
     if (['kilogram', 'kilograms', 'kg'].includes(value)) return 'kilograms';
-    if (['piece', 'pieces', 'pc', 'pcs'].includes(value)) return 'pieces';
+    if (['piece', 'pieces', 'pc', 'pcs', 'unit', 'units'].includes(value)) return 'pieces';
     return value || 'units';
 }
 function closeMapping(){ document.getElementById('mappingModal').style.display='none'; }
@@ -243,12 +353,15 @@ async function submitMapping(e){
     fd.append('payload', JSON.stringify(ingredients));
     const res = await fetch('api.php?action=save-product-ingredients', { method:'POST', body: fd });
     const json = await res.json();
-    if (json.success){ closeMapping(); loadMappings(); } else alert(json.error || 'Failed');
+    if (json.success){ closeMapping(); window._mappingPage = 1; loadMappings(); } else alert(json.error || 'Failed');
 }
-async function deleteMapping(id){ if(!confirm('Delete mapping?')) return; const fd=new FormData(); fd.append('id', id); const res=await fetch('api.php?action=delete-product-ingredient',{method:'POST', body:fd}); const j=await res.json(); if (j.success) loadMappings(); else alert(j.error||'Failed'); }
+async function deleteMapping(id){ if(!confirm('Delete mapping?')) return; const fd=new FormData(); fd.append('id', id); const res=await fetch('api.php?action=delete-product-ingredient',{method:'POST', body:fd}); const j=await res.json(); if (j.success) { const currentPage = window._mappingPage || 1; window._mappingPage = currentPage; loadMappings(); } else alert(j.error||'Failed'); }
 function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
 function escapeJs(s){ return (String(s).replace(/'/g, "\\'").replace(/"/g, '\\"')); }
 
+window._mappingPage = 1;
+window._mappingPerPage = 5;
+setupMappingFilters();
 loadMappings();
 </script>
 
@@ -256,9 +369,21 @@ loadMappings();
 // ingredients data for row population
 const AVAILABLE_INGREDIENTS = [
     <?php foreach($ingredients as $ing): ?>
-    { id: '<?php echo $ing['id']; ?>', name: '<?php echo addslashes($ing['name']); ?>', unit: '<?php echo addslashes($ing['unit']); ?>' },
+    { id: '<?php echo $ing['id']; ?>', name: '<?php echo addslashes($ing['name']); ?>', unit: '<?php echo addslashes($ing['unit']); ?>', package_size: '<?php echo addslashes((string)($ing['package_size'] ?? '')); ?>', package_unit: '<?php echo addslashes((string)($ing['package_unit'] ?? '')); ?>' },
     <?php endforeach; ?>
 ];
+
+function getRecipeUnitForIngredient(ingredient) {
+    const stockUnit = normalizeUnitValue(ingredient && ingredient.unit ? ingredient.unit : 'pieces');
+    const packageSize = parseFloat((ingredient && ingredient.package_size) ? ingredient.package_size : '0');
+    const packageUnit = normalizeUnitValue(ingredient && ingredient.package_unit ? ingredient.package_unit : '');
+
+    if (stockUnit === 'pieces' && packageSize > 0 && packageUnit !== 'pieces') {
+        return packageUnit;
+    }
+
+    return stockUnit;
+}
 
 function createIngredientRow(data){
     const div = document.createElement('div');
@@ -272,9 +397,12 @@ function createIngredientRow(data){
     sel.className = 'form-control ing-select';
     sel.style.flex = '1 1 260px';
     sel.style.minWidth = '260px';
-    sel.innerHTML = '<option value="">Select ingredient</option>' + AVAILABLE_INGREDIENTS.map(i=>`<option value="${i.id}" data-unit="${i.unit}">${escapeHtml(i.name)} (${escapeHtml(i.unit)})</option>`).join('');
+    sel.innerHTML = '<option value="">Select ingredient</option>' + AVAILABLE_INGREDIENTS.map(i=>{
+        const packageNote = (i.package_size && i.package_unit) ? ` - ${i.package_size} ${i.package_unit}` : '';
+        return `<option value="${i.id}" data-unit="${escapeHtml(i.unit)}" data-package-size="${escapeHtml(i.package_size || '')}" data-package-unit="${escapeHtml(i.package_unit || '')}">${escapeHtml(i.name)} (${escapeHtml(i.unit)}${packageNote})</option>`;
+    }).join('');
     if (data && data.ingredient_id) sel.value = data.ingredient_id;
-    sel.addEventListener('change', function(){ const opt = sel.options[sel.selectedIndex]; const unit = opt ? (opt.dataset.unit||'pieces') : 'pieces'; rowUnit.value = normalizeUnitValue(unit); });
+    sel.addEventListener('change', function(){ const opt = sel.options[sel.selectedIndex]; const ingredient = opt ? { unit: opt.dataset.unit || 'pieces', package_size: opt.dataset.packageSize || '', package_unit: opt.dataset.packageUnit || '' } : null; const unit = ingredient ? getRecipeUnitForIngredient(ingredient) : 'pieces'; rowUnit.value = normalizeUnitValue(unit); });
 
     const qty = document.createElement('input'); qty.type = 'number'; qty.step='0.0001'; qty.className='form-control ing-qty'; qty.style.width='120px'; qty.style.minWidth='120px'; qty.placeholder='Qty'; qty.value = data ? data.quantity_per_unit : '';
 
@@ -298,7 +426,15 @@ function createIngredientRow(data){
         <option value="pieces">Pieces (pcs)</option>
         <option value="units">Units</option>
     `;
-    if (data && data.unit) rowUnit.value = data.unit;
+    const ingredient = data && data.ingredient_id ? AVAILABLE_INGREDIENTS.find(item => String(item.id) === String(data.ingredient_id)) : null;
+    const mappedUnit = normalizeUnitValue(data && data.unit ? data.unit : '');
+    if (ingredient && ingredient.package_size && ingredient.package_unit && (mappedUnit === 'pieces' || mappedUnit === 'units')) {
+        rowUnit.value = normalizeUnitValue(getRecipeUnitForIngredient(ingredient));
+    } else if (data && data.unit) {
+        rowUnit.value = mappedUnit;
+    } else if (ingredient) {
+        rowUnit.value = normalizeUnitValue(getRecipeUnitForIngredient(ingredient));
+    }
 
     const del = document.createElement('button'); del.type='button'; del.className='btn'; del.style.background='#e53935'; del.style.color='#fff'; del.style.minWidth='88px'; del.innerText='Remove'; del.addEventListener('click', function(){ div.remove(); updateAddBtnState(); });
 

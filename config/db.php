@@ -106,6 +106,7 @@ function ensure_ingredients_table($conn) {
             stock DECIMAL(10,2) NOT NULL DEFAULT 0,
             package_size DECIMAL(10,2) NOT NULL DEFAULT 1,
             package_unit VARCHAR(32) DEFAULT 'pieces',
+            density_g_per_ml DECIMAL(10,4) NOT NULL DEFAULT 1,
             low_stock_threshold DECIMAL(10,2) NOT NULL DEFAULT 5,
             category VARCHAR(64) DEFAULT 'other',
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -127,6 +128,11 @@ function ensure_ingredients_table($conn) {
     $packageUnitCheck = $conn->query("SHOW COLUMNS FROM ingredients LIKE 'package_unit'");
     if ($packageUnitCheck && $packageUnitCheck->num_rows === 0) {
         $conn->query("ALTER TABLE ingredients ADD COLUMN package_unit VARCHAR(32) DEFAULT 'pieces' AFTER package_size");
+    }
+
+    $densityCheck = $conn->query("SHOW COLUMNS FROM ingredients LIKE 'density_g_per_ml'");
+    if ($densityCheck && $densityCheck->num_rows === 0) {
+        $conn->query("ALTER TABLE ingredients ADD COLUMN density_g_per_ml DECIMAL(10,4) NOT NULL DEFAULT 1 AFTER package_unit");
     }
 
     $checked = true;
@@ -224,6 +230,88 @@ function convert_unit_amount($amount, $fromUnit, $toUnit) {
     return $baseAmount / $toFactor;
 }
 
+function convert_unit_amount_with_density($amount, $fromUnit, $toUnit, $densityGPerMl = 1.0) {
+    $fromNormalized = normalize_unit_scale($fromUnit);
+    $toNormalized = normalize_unit_scale($toUnit);
+    $density = (float) $densityGPerMl;
+
+    if ($fromNormalized === $toNormalized) {
+        return (float) $amount;
+    }
+
+    $fromFamily = unit_scale_family($fromNormalized);
+    $toFamily = unit_scale_family($toNormalized);
+
+    if ($fromFamily === $toFamily) {
+        return convert_unit_amount($amount, $fromNormalized, $toNormalized);
+    }
+
+    if ($density <= 0) {
+        return null;
+    }
+
+    if ($fromFamily === 'volume' && $toFamily === 'mass') {
+        $amountMl = convert_unit_amount($amount, $fromNormalized, 'milliliters');
+        if ($amountMl === null) return null;
+        $grams = (float) $amountMl * $density;
+        if ($toNormalized === 'kilograms') return $grams / 1000.0;
+        if ($toNormalized === 'milligrams') return $grams * 1000.0;
+        return $grams;
+    }
+
+    if ($fromFamily === 'mass' && $toFamily === 'volume') {
+        $amountGrams = convert_unit_amount($amount, $fromNormalized, 'grams');
+        if ($amountGrams === null) return null;
+        $ml = (float) $amountGrams / $density;
+        if ($toNormalized === 'liters') return $ml / 1000.0;
+        if ($toNormalized === 'pieces') return null;
+        return $ml;
+    }
+
+    return null;
+}
+
+function get_ingredient_stock_context($ingredientRow) {
+    $stockUnit = normalize_unit_scale($ingredientRow['unit'] ?? 'pieces');
+    $packageSize = (float) ($ingredientRow['package_size'] ?? 0);
+    $packageUnit = normalize_unit_scale($ingredientRow['package_unit'] ?? '');
+
+    if ($packageSize > 0 && $packageUnit !== 'pieces') {
+        return [
+            'stock_unit' => 'pieces',
+            'effective_unit' => $packageUnit,
+            'units_per_stock' => $packageSize,
+        ];
+    }
+
+    return [
+        'stock_unit' => $stockUnit,
+        'effective_unit' => $stockUnit,
+        'units_per_stock' => 1.0,
+    ];
+}
+
+function convert_recipe_to_stock_amount($recipeAmount, $recipeUnit, $ingredientRow) {
+    $context = get_ingredient_stock_context($ingredientRow);
+    $recipeNormalized = normalize_unit_scale($recipeUnit);
+    $density = (float) ($ingredientRow['density_g_per_ml'] ?? 1);
+
+    if ($context['stock_unit'] === 'pieces' && $context['units_per_stock'] > 0 && $recipeNormalized !== 'pieces') {
+        $requiredPerPackage = convert_unit_amount_with_density($recipeAmount, $recipeUnit, $context['effective_unit'], $density);
+        if ($requiredPerPackage === null) {
+            return null;
+        }
+
+        return $requiredPerPackage / (float) $context['units_per_stock'];
+    }
+
+    if ($context['stock_unit'] === 'pieces' && $context['units_per_stock'] > 0 && $context['effective_unit'] !== 'pieces') {
+        return (float) $recipeAmount / (float) $context['units_per_stock'];
+    }
+
+    return convert_unit_amount_with_density($recipeAmount, $recipeUnit, $context['stock_unit'], $density);
+}
+
 function collect_order_ingredient_requirements($conn, $cart_items) {
     $requirements = [];
     $mapping_stmt = $conn->prepare("SELECT ingredient_id, quantity_per_unit, unit FROM product_ingredients WHERE product_id = ? AND (size = ? OR size IS NULL OR size = '') ORDER BY CASE WHEN size = ? THEN 0 ELSE 1 END");
@@ -269,7 +357,7 @@ function collect_order_ingredient_requirements($conn, $cart_items) {
             $recipe_amount = (float) $mapping['quantity_per_unit'];
             $recipe_unit = $mapping['unit'] ?? 'pieces';
 
-            $lookup_stmt = $conn->prepare("SELECT stock, unit FROM ingredients WHERE id = ? FOR UPDATE");
+            $lookup_stmt = $conn->prepare("SELECT stock, unit, package_size, package_unit, density_g_per_ml FROM ingredients WHERE id = ? FOR UPDATE");
             if (!$lookup_stmt) {
                 return [false, 'Failed to prepare ingredient lookup', []];
             }
@@ -287,8 +375,7 @@ function collect_order_ingredient_requirements($conn, $cart_items) {
                 return [false, 'Ingredient not found for product recipe', []];
             }
 
-            $ingredient_unit = $ingredient_row['unit'] ?? 'pieces';
-            $required_amount = convert_unit_amount($recipe_amount * $quantity, $recipe_unit, $ingredient_unit);
+            $required_amount = convert_recipe_to_stock_amount($recipe_amount * $quantity, $recipe_unit, $ingredient_row);
             if ($required_amount === null) {
                 return [false, 'Unit mismatch in ingredient mapping', []];
             }
@@ -297,7 +384,7 @@ function collect_order_ingredient_requirements($conn, $cart_items) {
                 $requirements[$ingredient_id] = [
                     'required' => 0.0,
                     'stock' => (float) ($ingredient_row['stock'] ?? 0),
-                    'unit' => $ingredient_unit,
+                    'unit' => $ingredient_row['unit'] ?? 'pieces',
                 ];
             }
 
@@ -404,7 +491,7 @@ function get_product_available_stock($conn, $productId, $fallbackStock = 0, $siz
             continue;
         }
 
-        $ingredientStmt = $conn->prepare("SELECT stock, unit FROM ingredients WHERE id = ?");
+        $ingredientStmt = $conn->prepare("SELECT stock, unit, package_size, package_unit, density_g_per_ml FROM ingredients WHERE id = ?");
         if (!$ingredientStmt) {
             $recipeStmt->close();
             return (int) $fallbackStock;
@@ -426,8 +513,7 @@ function get_product_available_stock($conn, $productId, $fallbackStock = 0, $siz
             return 0;
         }
 
-        $ingredientUnit = $ingredientRow['unit'] ?? 'pieces';
-        $requiredPerProduct = convert_unit_amount($recipeAmount, $recipeUnit, $ingredientUnit);
+        $requiredPerProduct = convert_recipe_to_stock_amount($recipeAmount, $recipeUnit, $ingredientRow);
         if ($requiredPerProduct === null || $requiredPerProduct <= 0) {
             $recipeStmt->close();
             return 0;
