@@ -2,6 +2,9 @@
 include 'config/session.php';
 include 'config/db.php';
 
+ensure_product_stock_column($conn);
+ensure_product_archive_columns($conn);
+
 function getMenuImagePath($productName, $imageUrl = null)
 {
     $imageUrl = trim((string)$imageUrl);
