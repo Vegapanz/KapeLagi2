@@ -12,8 +12,8 @@ if (!is_logged_in()) {
 
 $user_id = $_SESSION['user_id'];
 
-// Get user's orders
-$sql = "SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC";
+// Get user's most recent 5 orders
+$sql = "SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 5";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $user_id);
 $stmt->execute();

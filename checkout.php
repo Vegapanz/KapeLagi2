@@ -128,11 +128,14 @@ $verified_phone = $_SESSION['verified_phone'] ?? null;
 
                         <div class="form-group">
                             <label>Address 1</label>
-                            <div style="display:flex;gap:10px;align-items:stretch;">
+                            <div style="display:flex;gap:10px;align-items:stretch;position:relative;">
                                 <button type="button" id="openMapModalBtn" aria-label="Open map picker" style="width:52px;min-width:52px;border:1px solid #b18b63;background:#b18b63;color:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
                                     <i class="fas fa-map-marker-alt"></i>
                                 </button>
-                                <input id="delivery_address" type="text" name="delivery_address" class="form-input" placeholder="Street, house no., etc." value="<?php echo htmlspecialchars($saved_street_address); ?>" required>
+                                <div style="flex:1;position:relative;">
+                                    <input id="delivery_address" type="text" name="delivery_address" class="form-input" placeholder="Street, house no., etc." value="<?php echo htmlspecialchars($saved_street_address); ?>" autocomplete="off" required>
+                                    <div id="addressSuggestions" class="address-suggestions"></div>
+                                </div>
                             </div>
                             <input type="hidden" id="lat" name="lat">
                             <input type="hidden" id="lng" name="lng">
@@ -144,22 +147,22 @@ $verified_phone = $_SESSION['verified_phone'] ?? null;
                             <input type="text" name="address_2" class="form-input" placeholder="Street Number (blk,lot,phase, etc.)" value="<?php echo htmlspecialchars($saved_block_lot); ?>">
                         </div>
 
-                    </form>
+                        <h3 class="section-title mt-5">Payment Method</h3>
+                        <div class="payment-placeholder">
+                            <div class="payment-methods">
+                                <label class="payment-option">
+                                    <input type="radio" name="payment_method" value="COD" checked required>
+                                    <span>Cash on Delivery</span>
+                                </label>
 
-                    <h3 class="section-title mt-5">Payment Method</h3>
-                    <div class="payment-placeholder">
-                        <div class="payment-methods">
-                            <label class="payment-option">
-                                <input type="radio" name="payment_method" value="COD" checked required>
-                                <span>Cash on Delivery</span>
-                            </label>
-
-                            <label class="payment-option">
-                                <input type="radio" name="payment_method" value="GCASH" required>
-                                <span>GCash</span>
-                            </label>
+                                <label class="payment-option">
+                                    <input type="radio" name="payment_method" value="GCASH" required>
+                                    <span>GCash</span>
+                                </label>
+                            </div>
                         </div>
-                    </div>
+
+                    </form>
                 </div>
 
                 <!-- Right: Order Summary -->
@@ -397,6 +400,33 @@ $verified_phone = $_SESSION['verified_phone'] ?? null;
                 document.getElementById('lng').value = latlng.lng;
                 if (deliveryInput && mapAddressEl) reverseGeocode(latlng);
             }
+
+            window.KapeCheckout = window.KapeCheckout || {};
+            window.KapeCheckout.setMapLocation = function (lat, lng, displayName) {
+                const latlng = L.latLng(lat, lng);
+                const address2Input = document.querySelector('input[name="address_2"]');
+                if (address2Input) {
+                    address2Input.value = '';
+                }
+                if (!marker) {
+                    marker = L.marker(latlng, { draggable: true, icon: userIcon }).addTo(map);
+                    marker.on('dragend', ev => {
+                        const pos = ev.target.getLatLng();
+                        updateInputs(pos);
+                        if (storeMarker) drawRoute(pos, storeMarker.getLatLng());
+                    });
+                } else {
+                    marker.setLatLng(latlng);
+                }
+                map.panTo(latlng);
+                updateInputs(latlng);
+                if (storeMarker) {
+                    drawRoute(latlng, storeMarker.getLatLng());
+                }
+                if (mapAddressEl && displayName) {
+                    mapAddressEl.textContent = displayName;
+                }
+            };
 
             // Draw route between two points and show distance
             function drawRoute(from, to) {
