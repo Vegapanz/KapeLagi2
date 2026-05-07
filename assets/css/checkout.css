@@ -98,6 +98,45 @@
     color: rgba(65, 58, 50, 0.42);
 }
 
+.address-suggestions {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    z-index: 2000;
+    background: #ffffff;
+    border: 1px solid rgba(65, 58, 50, 0.18);
+    border-radius: 12px;
+    box-shadow: 0 16px 30px rgba(0, 0, 0, 0.12);
+    max-height: 240px;
+    overflow-y: auto;
+    display: none;
+    padding: 0.15rem 0;
+}
+
+.address-suggestions.active {
+    display: block;
+}
+
+.address-suggestion-item {
+    padding: 0.85rem 1rem;
+    cursor: pointer;
+    color: #1a0f0a;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    background: transparent;
+    border-bottom: 1px solid rgba(65, 58, 50, 0.08);
+    transition: background 0.15s ease;
+}
+
+.address-suggestion-item:hover {
+    background: rgba(181, 139, 99, 0.12);
+}
+
+.address-suggestion-item:last-child {
+    border-bottom: none;
+}
+
 .form-input:focus {
     outline: none;
     border-color: #4a3022;

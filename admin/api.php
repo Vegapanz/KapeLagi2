@@ -2,6 +2,7 @@
 // API endpoints for admin functionality
 include '../config/session.php';
 include '../config/db.php';
+include '../config/paymongo.php';
 
 // Verify admin access
 if (!is_admin()) {
@@ -83,6 +84,10 @@ switch ($action) {
     // ORDERS MANAGEMENT
     case 'update-order-status':
         update_order_status($conn);
+        break;
+
+    case 'refresh-gcash-status':
+        refresh_gcash_status($conn);
         break;
     
     default:
@@ -669,5 +674,62 @@ function update_order_status($conn) {
         http_response_code(500);
         echo json_encode(['error' => 'Failed to update order status']);
     }
+}
+
+// Refresh PayMongo GCash source status for an order
+function refresh_gcash_status($conn) {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(400);
+        echo json_encode(['error' => 'Invalid request method']);
+        exit;
+    }
+
+    $order_id = intval($_POST['order_id'] ?? 0);
+    if ($order_id <= 0) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Invalid order ID']);
+        exit;
+    }
+
+    $stmt = $conn->prepare("SELECT payment_method, payment_intent_id, status FROM orders WHERE id = ?");
+    $stmt->bind_param("i", $order_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $order = $result ? $result->fetch_assoc() : null;
+
+    if (!$order || $order['payment_method'] !== 'GCASH' || empty($order['payment_intent_id'])) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Order not eligible for GCash refresh']);
+        exit;
+    }
+
+    $source = getPaymongoSource($order['payment_intent_id']);
+    if (!$source || !isset($source['data']['attributes']['status'])) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to retrieve PayMongo source status']);
+        exit;
+    }
+
+    $source_status = $source['data']['attributes']['status'];
+    $new_status = $order['status'];
+    if (in_array($source_status, ['paid', 'authorized', 'chargeable'], true)) {
+        $new_status = 'processing';
+    } elseif (in_array($source_status, ['failed', 'cancelled'], true)) {
+        $new_status = 'cancelled';
+    } elseif ($source_status === 'pending') {
+        $new_status = 'pending';
+    }
+
+    if ($new_status !== $order['status']) {
+        $update_stmt = $conn->prepare("UPDATE orders SET status = ? WHERE id = ?");
+        $update_stmt->bind_param("si", $new_status, $order_id);
+        $update_stmt->execute();
+    }
+
+    echo json_encode([
+        'success' => true,
+        'source_status' => $source_status,
+        'order_status' => $new_status
+    ]);
 }
 ?>

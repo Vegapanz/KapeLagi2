@@ -1,6 +1,7 @@
 <?php
 $page_title = "Order Details";
 include 'includes/header.php';
+include_once '../config/paymongo.php';
 ensure_order_cancellation_reason_column($conn);
 
 if (!isset($_GET['id'])) {
@@ -16,6 +17,14 @@ $current_page = max(1, intval($_GET['page'] ?? 1));
 $order = $conn->query("
     SELECT * FROM orders WHERE id = $order_id
 ")->fetch_assoc();
+
+$payment_source_status = null;
+if ($order && $order['payment_method'] === 'GCASH' && !empty($order['payment_intent_id'])) {
+    $source = getPaymongoSource($order['payment_intent_id']);
+    if ($source && isset($source['data']['attributes']['status'])) {
+        $payment_source_status = $source['data']['attributes']['status'];
+    }
+}
 
 if (!$order) {
     echo '<div class="alert alert-danger">Order not found</div>';
@@ -49,7 +58,7 @@ $items = $items_stmt->get_result();
 
 $status_class = 'pending';
 if ($order['status'] === 'completed') $status_class = 'completed';
-if ($order['status'] === 'processing') $status_class = 'processing';
+if ($order['status'] === 'processing' || $order['status'] === 'confirmed') $status_class = 'processing';
 if ($order['status'] === 'cancelled') $status_class = 'cancelled';
 ?>
 
@@ -128,11 +137,27 @@ if ($order['status'] === 'cancelled') $status_class = 'cancelled';
             </div>
 
             <div style="margin-bottom: 20px;">
+                <label style="color: #999; font-size: 0.9rem;">Payment Method</label>
+                <p><?php echo htmlspecialchars($order['payment_method'] ?? 'COD'); ?></p>
+                <?php if ($order['payment_method'] === 'GCASH'): ?>
+                    <?php if (!empty($order['payment_intent_id'])): ?>
+                        <p style="margin-top: 6px; font-size: 0.95rem; color: #555;">PayMongo Source ID: <?php echo htmlspecialchars($order['payment_intent_id']); ?></p>
+                        <?php if ($payment_source_status !== null): ?>
+                            <p style="margin-top: 4px; font-size: 0.95rem; color: #555;">PayMongo Status: <?php echo htmlspecialchars(ucfirst($payment_source_status)); ?></p>
+                        <?php endif; ?>
+                        <button type="button" id="refreshPaymentStatusButton" class="btn btn-sm" style="margin-top: 10px; background-color: #0d6efd; color: #fff; border: none; padding: 8px 14px;" onclick="refreshGCashPaymentStatus(<?php echo $order_id; ?>)">Refresh GCash Status</button>
+                    <?php else: ?>
+                        <p style="margin-top: 6px; font-size: 0.95rem; color: #555;">No PayMongo source has been created for this order yet.</p>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </div>
+
+            <div style="margin-bottom: 20px;">
                 <label style="color: #999; font-size: 0.9rem;">Status</label>
                 <p>
                     <select id="orderStatus" class="form-select" style="max-width: 200px; border: 1px solid #e0d9cd; border-radius: 5px; padding: 8px;" onchange="handleOrderStatusChange(<?php echo $order_id; ?>, this.value)">
                         <option value="pending" <?php echo $order['status'] === 'pending' ? 'selected' : ''; ?>>Pending</option>
-                        <option value="processing" <?php echo $order['status'] === 'processing' ? 'selected' : ''; ?>>Processing</option>
+                        <option value="processing" <?php echo ($order['status'] === 'processing' || $order['status'] === 'confirmed') ? 'selected' : ''; ?>>Processing</option>
                         <option value="completed" <?php echo $order['status'] === 'completed' ? 'selected' : ''; ?>>Completed</option>
                         <option value="cancelled" <?php echo $order['status'] === 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
                     </select>
@@ -376,6 +401,44 @@ function saveOrderUpdate(orderId) {
         console.error('Error:', error);
         alert('Error updating order status');
         location.reload();
+    });
+}
+
+function refreshGCashPaymentStatus(orderId) {
+    const button = document.getElementById('refreshPaymentStatusButton');
+    if (button) {
+        button.disabled = true;
+        button.textContent = 'Refreshing...';
+    }
+
+    const formData = new FormData();
+    formData.append('order_id', orderId);
+
+    fetch('api.php?action=refresh-gcash-status', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (button) {
+            button.disabled = false;
+            button.textContent = 'Refresh GCash Status';
+        }
+
+        if (data.success) {
+            alert('PayMongo status: ' + data.source_status + '\nOrder status: ' + data.order_status);
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to refresh payment status'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (button) {
+            button.disabled = false;
+            button.textContent = 'Refresh GCash Status';
+        }
+        alert('Error refreshing GCash status');
     });
 }
 
